@@ -194,7 +194,7 @@ function ListPicker({ onSelect }) {
 
 // ── BatchView — shows items for a specific list ────────────────────────────────
 
-function BatchView({ listId, onBack }) {
+function BatchView({ listId }) {
   const [listDetail, setListDetail] = useState(null);
   const [summary,    setSummary]    = useState(null);
   const [loading,    setLoading]    = useState(true);
@@ -212,7 +212,12 @@ function BatchView({ listId, onBack }) {
       setSummary(summaryRes.data.summary);
     } catch (err) {
       console.error('Error fetching batch data:', err);
-      setError(err.response?.data?.error || 'تعذّر تحميل البيانات');
+      const status = err.response?.status;
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        `تعذّر تحميل البيانات (${status ? `رمز ${status}` : 'لا يوجد اتصال بالخادم'})`
+      );
     } finally {
       setLoading(false);
     }
@@ -255,14 +260,8 @@ function BatchView({ listId, onBack }) {
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Back + title */}
+      {/* Title */}
       <div className="flex items-start gap-3">
-        <button
-          className="bg-transparent border-none font-cairo text-[0.82rem] font-semibold text-[#1B5E8C] cursor-pointer p-0 mt-1 whitespace-nowrap shrink-0 hover:underline"
-          onClick={onBack}
-        >
-          ← رجوع
-        </button>
         <div>
           <h2 className="text-[1.45rem] font-extrabold text-[#0d3d5c] m-0 mb-1 flex items-center gap-2.5 flex-wrap">
             تأكيد الاستلام
@@ -382,7 +381,6 @@ export default function AgentReceiptsBatchPage() {
   const listId       = searchParams.get('listId');
 
   const selectList = (id) => router.push(`/receipts/batch?listId=${id}`);
-  const goBack     = ()  => router.push('/receipts/batch');
 
   return (
     <AppShell>
@@ -403,7 +401,7 @@ export default function AgentReceiptsBatchPage() {
         )}
 
         {listId
-          ? <BatchView listId={listId} onBack={goBack} />
+          ? <BatchView listId={listId} />
           : <ListPicker onSelect={selectList} />}
 
       </div>
