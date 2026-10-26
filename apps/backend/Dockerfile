@@ -18,4 +18,5 @@ COPY . .
 
 # Railway injects PORT; the app reads process.env.PORT (default 4000)
 EXPOSE 4000
-CMD ["node", "src/index.js"]
+# Migrations + first-admin creation, then the API (works on Render, which has no pre-deploy step on free plans)
+CMD ["npm", "run", "start:prod"]
