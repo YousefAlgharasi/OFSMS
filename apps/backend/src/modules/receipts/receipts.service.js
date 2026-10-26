@@ -92,6 +92,94 @@ const uploadBiometricReceipt = async ({
 };
 
 /**
+ * Agent confirms that a registered orphan received the money (no fingerprint).
+ * Only orphans registered by this agent, in a released list, can be confirmed.
+ */
+const confirmReceipt = async ({ itemId, agentId }) => {
+  const { rows: itemRows } = await query(
+    `SELECT di.id, di.included, dl.status AS list_status, o.agent_id AS orphan_agent_id
+     FROM disbursement_items di
+     JOIN disbursement_lists dl ON dl.id = di.list_id
+     JOIN orphans o ON o.id = di.orphan_id
+     WHERE di.id = $1`,
+    [itemId]
+  );
+
+  const item = itemRows[0];
+  if (!item) {
+    throw Object.assign(new Error('بند الصرف غير موجود'), { status: 404 });
+  }
+  if (item.orphan_agent_id !== agentId) {
+    throw Object.assign(new Error('هذا اليتيم غير مسجّل باسمك'), { status: 403 });
+  }
+  if (!item.included) {
+    throw Object.assign(new Error('هذا المستفيد مستبعد من الصرف الحالي'), { status: 400 });
+  }
+  if (item.list_status !== 'released') {
+    throw Object.assign(new Error('لا يمكن تأكيد الاستلام لكشف لم يُصدر بعد'), { status: 400 });
+  }
+
+  const { rows } = await query(
+    `INSERT INTO biometric_receipts (item_id, agent_id)
+     VALUES ($1, $2)
+     ON CONFLICT (item_id) DO NOTHING
+     RETURNING *`,
+    [itemId, agentId]
+  );
+  if (rows.length === 0) {
+    throw Object.assign(new Error('تم تأكيد الاستلام لهذا اليتيم مسبقاً'), { status: 409 });
+  }
+
+  await logAudit({
+    userId:     agentId,
+    action:     'receipt_confirmed',
+    entityType: 'biometric_receipt',
+    entityId:   rows[0].id,
+    newValue:   { item_id: itemId },
+  });
+
+  return rows[0];
+};
+
+/**
+ * Items of one released list that belong to orphans registered by this agent.
+ */
+const getAgentListItems = async (agentId, listId) => {
+  const { rows: lists } = await query(
+    `SELECT id, month, year, status FROM disbursement_lists WHERE id = $1`,
+    [listId]
+  );
+  const list = lists[0];
+  if (!list || list.status !== 'released') {
+    throw Object.assign(new Error('الكشف غير موجود أو لم يُصدر بعد'), { status: 404 });
+  }
+
+  const { rows: items } = await query(
+    `SELECT
+       di.id,
+       di.amount,
+       o.full_name  AS beneficiary_name,
+       g.name_ar    AS governorate_ar,
+       s.full_name  AS sponsor_name,
+       br.confirmed_at AS confirmed_at
+     FROM disbursement_items di
+     JOIN orphans o ON o.id = di.orphan_id
+     LEFT JOIN governorates g ON g.id = o.governorate_id
+     LEFT JOIN sponsorships sp ON sp.beneficiary_id = o.id
+       AND sp.beneficiary_type = 'orphan' AND sp.is_active = TRUE
+     LEFT JOIN sponsors s ON s.id = sp.sponsor_id
+     LEFT JOIN biometric_receipts br ON br.item_id = di.id
+     WHERE di.list_id = $1
+       AND di.included = TRUE
+       AND o.agent_id = $2
+     ORDER BY o.full_name ASC`,
+    [listId, agentId]
+  );
+
+  return { list, items };
+};
+
+/**
  * Get all biometric receipts — filterable by agent_id or list_id.
  * Used by supervisor/GM (FR-032).
  *
@@ -156,12 +244,11 @@ const getAgentReceiptSummary = async (agentId, listId) => {
        BOOL_AND(br.id IS NOT NULL)                          AS all_confirmed
      FROM disbursement_items di
      JOIN disbursement_lists dl ON dl.id = di.list_id
-     LEFT JOIN orphans   o ON o.id = di.orphan_id
-     LEFT JOIN families  f ON f.id = di.family_id
+     JOIN orphans o ON o.id = di.orphan_id
      LEFT JOIN biometric_receipts br ON br.item_id = di.id
      WHERE dl.id = $1
        AND di.included = TRUE
-       AND (o.agent_id = $2 OR f.agent_id = $2)`,
+       AND o.agent_id = $2`,
     [listId, agentId]
   );
   return rows[0];
@@ -177,7 +264,7 @@ const batchConfirm = async (agentId, listId, notes = null) => {
     throw Object.assign(new Error('لا يوجد مستفيدين في هذا الكشف'), { status: 400 });
   }
   if (!summary.all_confirmed) {
-    throw Object.assign(new Error(`لم يتم تسجيل بصمات جميع المستفيدين (متبقي ${summary.pending_items})`), { status: 400 });
+    throw Object.assign(new Error(`لم يتم تأكيد استلام جميع الأيتام (متبقي ${summary.pending_items})`), { status: 400 });
   }
 
   const { rows } = await query(
@@ -321,4 +408,4 @@ const getSupervisorLog = async (listId) => {
   };
 };
 
-module.exports = { uploadBiometricReceipt, getReceipts, getAgentReceiptSummary, batchConfirm, getAgentActiveBatch, getSupervisorLog };
+module.exports = { uploadBiometricReceipt, confirmReceipt, getAgentListItems, getReceipts, getAgentReceiptSummary, batchConfirm, getAgentActiveBatch, getSupervisorLog };

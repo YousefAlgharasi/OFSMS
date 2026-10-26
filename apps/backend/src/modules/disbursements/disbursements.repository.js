@@ -201,12 +201,11 @@ const findReleasedListsByAgent = async (agentId) => {
          - COUNT(br.id)                                           AS pending_items
      FROM disbursement_lists dl
      JOIN disbursement_items di ON di.list_id = dl.id
-     LEFT JOIN orphans  o ON o.id  = di.orphan_id
-     LEFT JOIN families f ON f.id  = di.family_id
+     JOIN orphans o ON o.id = di.orphan_id
      LEFT JOIN biometric_receipts br ON br.item_id = di.id
      WHERE dl.status = 'released'
        AND di.included = TRUE
-       AND (o.agent_id = $1 OR f.agent_id = $1)
+       AND o.agent_id = $1
      GROUP BY dl.id
      ORDER BY dl.year DESC, dl.month DESC`,
     [agentId]

@@ -22,7 +22,7 @@ import {
   LayoutDashboard, Users, Home, Tag, Handshake, Star,
   Map, UserCog, BookOpen, FileText, ClipboardList, ClipboardCheck,
   Plus, DollarSign, Archive, LogOut, ChevronRight, ChevronLeft, Menu, X, Megaphone,
-  Globe, ExternalLink, Package, GraduationCap, Settings, Sun, Moon,
+  Globe, ExternalLink, Package, GraduationCap, Settings, Sun, Moon, CheckCircle2,
 } from 'lucide-react';
 
 // ── Nav items per role ────────────────────────────────────────────────────────
@@ -164,6 +164,12 @@ const NAV_ITEMS = {
       group: 'القرآن الكريم',
       items: [
         { label: 'رفع تقرير الحفظ', href: '/quran-reports/new', icon: BookOpen },
+      ],
+    },
+    {
+      group: 'الصرف',
+      items: [
+        { label: 'تأكيد الاستلام', href: '/receipts/batch', icon: CheckCircle2 },
       ],
     },
     {
