@@ -7,8 +7,6 @@ services:
     rootDir: apps/backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
-    # Runs DB migrations + first-admin creation, then starts the API
-    dockerCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
