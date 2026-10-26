@@ -364,6 +364,8 @@ export default function OrphanRegistrationPage() {
   };
 
   const onSubmit = async (data) => {
+    // Only the last page submits (blocks Enter-key and stray submits on earlier pages)
+    if (currentPage < 5) return;
     // ── [Fix 3b] Guard radio fields before touching FormData ──────────────────
     let hasRadioError = false;
 
@@ -1702,11 +1704,12 @@ export default function OrphanRegistrationPage() {
             )}
 
             {currentPage < 5 ? (
-              <Button variant="primary" type="button" onClick={handleNext}>
+              <Button key="next" variant="primary" type="button" onClick={handleNext}>
                 التالي ←
               </Button>
             ) : (
               <Button
+                key="submit"
                 variant="primary"
                 type="submit"
                 disabled={submitState === 'loading'}
