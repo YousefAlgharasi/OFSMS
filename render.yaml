@@ -1,44 +1,53 @@
+# Render Blueprint — backend API (Docker image with Chromium for Arabic PDF reports).
+# Database + file storage: Supabase. Frontend: Vercel. See README.md.
 services:
   - type: web
     name: ofsms-backend
-    runtime: node
+    runtime: docker
     rootDir: apps/backend
-    buildCommand: npm install
-    startCommand: npm start
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    # Runs DB migrations + first-admin creation, then starts the API
+    dockerCommand: sh -c "npm run predeploy && node src/index.js"
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 4000
-      - key: FORCE_HTTPS
-        value: true
       - key: JWT_EXPIRES_IN
         value: 30m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
-      - key: AWS_REGION
-        value: eu-west-1
-      - key: AWS_S3_BUCKET
-        value: ofsms-documents
-      - key: S3_BUCKET_NAME
-        value: ofsms-documents
+      - key: ADMIN_NAME
+        value: مدير النظام
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_SPONSOR_SECRET
+        generateValue: true
+      # Supabase → Connect → "Session pooler" connection string
       - key: DATABASE_URL
         sync: false
-      - key: JWT_SECRET
+      # Your Vercel site, e.g. https://ofsms.vercel.app (no trailing slash)
+      - key: FRONTEND_URL
         sync: false
-      - key: JWT_REFRESH_SECRET
+      # This service's own URL, e.g. https://ofsms-backend.onrender.com
+      - key: PUBLIC_API_URL
+        sync: false
+      # First General Manager account (password: at least 10 characters)
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Supabase Storage (S3-compatible) — Project Settings → Storage → S3 Connection
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: AWS_REGION
         sync: false
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: FIREBASE_PROJECT_ID
-        sync: false
-      - key: FIREBASE_PRIVATE_KEY
-        sync: false
-      - key: FIREBASE_CLIENT_EMAIL
-        sync: false
-      - key: FRONTEND_URL
         sync: false
