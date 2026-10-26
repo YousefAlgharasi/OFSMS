@@ -55,6 +55,13 @@ JWT secrets are generated automatically. When it is live, open `https://<your-ba
 Open the Vercel URL → **تسجيل الدخول** with `ADMIN_EMAIL` / `ADMIN_PASSWORD`, then remove
 `ADMIN_PASSWORD` from Render. Create the other users from **إدارة المستخدمين**.
 
+### 5. Android app (optional)
+GitHub → **Actions → Build Android APK → Run workflow** → `site_url` = your **Vercel** address
+(e.g. `https://ofsms.vercel.app`). Download `ofsms-apk` from the finished run and install `app-debug.apk`.
+
+> Use the **Vercel** (website) address, never the Render (backend) address. The app just opens
+> that address, so the Render one shows `Cannot GET /`.
+
 ### Troubleshooting
 | Symptom | Fix |
 |---|---|
@@ -62,6 +69,7 @@ Open the Vercel URL → **تسجيل الدخول** with `ADMIN_EMAIL` / `ADMIN_
 | Website calls `localhost:4000` | `NEXT_PUBLIC_API_URL` missing on Vercel; set it and redeploy. |
 | Backend can't connect to the database | Use the Supabase **Session pooler** string (the direct one is IPv6-only) and the right password. |
 | Uploads fail | Check bucket name, S3 endpoint/region and keys from Supabase. |
+| App shows `Cannot GET /` | The APK was built with the Render URL. Rebuild it with the Vercel URL (step 5). |
 | First request is slow | Render free plan was asleep. |
 
 ## Other hosting
