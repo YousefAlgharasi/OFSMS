@@ -91,6 +91,8 @@ export default function FamilyRegistrationPage() {
   };
 
   const onSubmit = async (data) => {
+    // Only the last step submits (blocks Enter-key and stray submits on earlier steps)
+    if (step < 3) return;
     setSubmitState('loading');
     setApiError('');
 
@@ -343,11 +345,12 @@ export default function FamilyRegistrationPage() {
             )}
             
             {step < 3 ? (
-              <Button variant="primary" type="button" onClick={handleNext}>
+              <Button key="next" variant="primary" type="button" onClick={handleNext}>
                 التالي ←
               </Button>
             ) : (
               <Button
+                key="submit"
                 variant="primary"
                 type="submit"
                 disabled={submitState === 'loading'}
