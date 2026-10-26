@@ -6,6 +6,7 @@
 const { validationResult } = require('express-validator');
 const service = require('./receipts.service');
 const { scanBuffer } = require('../../middleware/fileScanner');
+const { receiptsHTML, htmlToPDF } = require('../reports/reports.pdf');
 
 /**
  * POST /api/receipts/biometric
@@ -112,6 +113,52 @@ const getMyListItems = async (req, res, next) => {
 };
 
 /**
+ * GET /api/receipts/my-items/:listId/pdf
+ * PDF of the logged-in agent's own orphans for one released list.
+ */
+const exportMyItemsPdf = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    const { list, items } = await service.getAgentListItems(req.user.id, req.params.listId);
+
+    const months = [
+      '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    ];
+    const monthName = months[list.month] || list.month;
+    const fmt = (d) => new Date(d).toLocaleDateString('en-GB');
+    const rows = items.map((i) => ({ ...i, confirmed_date: i.confirmed_at ? fmt(i.confirmed_at) : '' }));
+    const total = rows.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+    const confirmed = rows.filter((r) => r.confirmed_at).length;
+
+    const html = receiptsHTML({
+      title: `تأكيد استلام كشف الصرف — ${monthName} ${list.year}`,
+      meta: `المندوب: ${req.user.name || '—'} &nbsp;|&nbsp; تاريخ الإصدار: ${fmt(new Date())}`,
+      stats: [
+        { label: 'عدد الأيتام',     value: `${rows.length} يتيم` },
+        { label: 'تم تأكيدهم',      value: `${confirmed} يتيم` },
+        { label: 'لم يتم تأكيدهم',  value: `${rows.length - confirmed} يتيم` },
+        { label: 'إجمالي المبلغ',   value: `${total.toLocaleString('en')} ريال` },
+      ],
+      rows,
+      totalAmount: total,
+    });
+
+    const pdf = await htmlToPDF(html);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(`تأكيد-استلام-${monthName}-${list.year}`)}.pdf"`);
+    res.setHeader('Content-Length', pdf.length);
+    return res.end(pdf);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+};
+
+/**
  * GET /api/receipts/summary/:listId
  */
 const getAgentReceiptSummary = async (req, res, next) => {
@@ -189,4 +236,4 @@ const getSupervisorLog = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadBiometricReceipt, confirmReceipt, getMyListItems, getReceipts, getAgentReceiptSummary, batchConfirm, getMyBatch, getSupervisorLog };
+module.exports = { uploadBiometricReceipt, confirmReceipt, getMyListItems, exportMyItemsPdf, getReceipts, getAgentReceiptSummary, batchConfirm, getMyBatch, getSupervisorLog };

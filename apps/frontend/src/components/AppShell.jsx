@@ -148,7 +148,7 @@ const NAV_ITEMS = {
       group: 'الرئيسية',
       items: [
         { label: 'لوحة التحكم', href: '/dashboard',  icon: LayoutDashboard },
-        { label: 'أيتامي',      href: '/my-orphans', icon: Users },
+        { label: 'أيتامي وأسري', href: '/my-orphans', icon: Users },
         { label: 'تقييم الباحث الدوري', href: '/evaluations', icon: ClipboardCheck },
         { label: 'البرامج التربوية والتوعوية', href: '/educational', icon: GraduationCap },
       ],
