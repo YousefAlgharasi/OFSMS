@@ -5,6 +5,7 @@
  * POST /api/receipts/biometric          → agent uploads a fingerprint receipt
  * POST /api/receipts/confirm            → agent confirms receipt for their own orphan
  * GET  /api/receipts/my-items/:listId   → agent's own orphans in a released list
+ * GET  /api/receipts/my-items/:listId/pdf → same list as a PDF
  * GET  /api/receipts                    → supervisor/GM view all receipts (filterable)
  * GET  /api/receipts/summary/:listId    → agent checks their completion for a list
  */
@@ -57,6 +58,16 @@ router.get(
   authorize('agent'),
   [param('listId').isUUID().withMessage('listId غير صحيح')],
   controller.getMyListItems
+);
+
+// ── GET /api/receipts/my-items/:listId/pdf ────────────────────────────────────
+// Agent: PDF of their own orphans for one released list
+router.get(
+  '/my-items/:listId/pdf',
+  authenticate,
+  authorize('agent'),
+  [param('listId').isUUID().withMessage('listId غير صحيح')],
+  controller.exportMyItemsPdf
 );
 
 // ── GET /api/receipts ─────────────────────────────────────────────────────────

@@ -16,6 +16,7 @@
  *   GET  /api/disbursements/agent/released   → agent's released lists
  *   GET  /api/receipts/my-items/:listId      → agent's own orphans in the list
  *   GET  /api/receipts/summary/:listId       → confirmed count
+ *   GET  /api/receipts/my-items/:listId/pdf  → PDF export of the same list
  *   POST /api/receipts/confirm               → confirm receipt (no fingerprint)
  */
 
@@ -26,6 +27,7 @@ import api from '@/lib/api';
 import AppShell from '@/components/AppShell';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import ExportButtons from '@/components/ExportButtons';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -273,6 +275,14 @@ function BatchView({ listId }) {
           </h2>
           <p className="text-[0.82rem] text-[#6b7a8d] m-0">أكّد استلام كل يتيم سجّلته بعد تسليم المبلغ يدوياً</p>
         </div>
+        {!loading && items.length > 0 && (
+          <div className="mr-auto shrink-0">
+            <ExportButtons
+              pdfUrl={`/receipts/my-items/${listId}/pdf`}
+              filename={`تأكيد-استلام-${MONTHS_AR[month] || ''}-${year || ''}`}
+            />
+          </div>
+        )}
       </div>
 
       {error && <div className={CLS_ERR_BANNER}><AlertTriangle size={18} /> {error}</div>}

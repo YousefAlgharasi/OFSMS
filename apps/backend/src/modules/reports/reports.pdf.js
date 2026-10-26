@@ -306,6 +306,83 @@ const disbursementHTML = ({ title, meta, stats, rows, totalAmount, totalCount })
 </html>
 `;
 
+// ── Receipt confirmation HTML (agent's own orphans for one released list) ─────
+
+const receiptsHTML = ({ title, meta, stats, rows, totalAmount }) => `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>${BASE_CSS}</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="header">
+    <div class="header-gold-bar"></div>
+    <div class="header-inner">
+      <div class="header-system-name">نظام إدارة كفالة الأيتام والأسر — OFSMS</div>
+      <div class="header-divider"></div>
+      <div class="header-title">${title}</div>
+      <div class="header-meta">${meta}</div>
+    </div>
+    <div class="header-bottom-bar"></div>
+  </header>
+
+  <div class="stats-grid">
+    ${stats.map(s => `
+      <div class="stat-card">
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-value">${s.value}</div>
+      </div>
+    `).join('')}
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:24%">اليتيم</th>
+          <th style="width:13%">المحافظة</th>
+          <th style="width:21%">الكافل</th>
+          <th style="width:14%; direction:ltr; text-align:left;">المبلغ (ريال)</th>
+          <th style="width:18%">حالة الاستلام</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${safeCell(r.beneficiary_name)}</td>
+            <td>${safeCell(r.governorate_ar)}</td>
+            <td>${r.sponsor_name ? safeCell(r.sponsor_name) : '<span class="no-sponsor">بدون كافل</span>'}</td>
+            <td class="amount-cell">${parseFloat(r.amount).toLocaleString('en')}</td>
+            <td>${r.confirmed_at
+              ? `<span class="badge badge-green">تم التأكيد ${r.confirmed_date}</span>`
+              : '<span class="badge badge-yellow">لم يتم التأكيد</span>'}</td>
+          </tr>
+        `).join('')}
+        <tr class="total-row">
+          <td>الإجمالي</td>
+          <td>${rows.length} يتيم</td>
+          <td></td>
+          <td class="amount-cell">${totalAmount.toLocaleString('en')}</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="footer">
+    <span class="footer-brand">نظام OFSMS — نظام إدارة كفالة الأيتام والأسر</span>
+    <span class="footer-confidential">سري — للاستخدام الداخلي فقط</span>
+  </footer>
+
+</div>
+</body>
+</html>
+`;
+
 // ── Governorate HTML ───────────────────────────────────────────────────────────
 
 const governorateHTML = ({ title, meta, stats, rows }) => `
@@ -581,4 +658,4 @@ const htmlToPDF = async (html) => {
   return pdf;
 };
 
-module.exports = { disbursementHTML, governorateHTML, orphanProfileHTML, familyProfileHTML, htmlToPDF };
+module.exports = { disbursementHTML, receiptsHTML, governorateHTML, orphanProfileHTML, familyProfileHTML, htmlToPDF };
