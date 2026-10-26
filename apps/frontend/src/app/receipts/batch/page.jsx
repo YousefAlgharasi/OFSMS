@@ -3,24 +3,24 @@
 /**
  * apps/frontend/src/app/receipts/batch/page.jsx
  * Route:  /receipts/batch          → shows agent's released lists to pick from
- *         /receipts/batch?listId=X → shows items for that specific list
+ *         /receipts/batch?listId=X → shows the agent's own orphans for that list
  *
  * Agent only.
  * Workflow:
- *   1. Agent lands on this page → sees all released lists assigned to them
- *   2. Clicks a list → sees each beneficiary with a "رفع البصمة" button
- *   3. Captures fingerprint image → uploads via POST /api/receipts/biometric
- *   4. Progress bar updates as each item is confirmed
+ *   1. Agent lands on this page → sees all released lists that include orphans they registered
+ *   2. Clicks a list → sees only the orphans the agent registered, each with a "تأكيد الاستلام" button
+ *   3. Confirms after handing over the money → POST /api/receipts/confirm
+ *   4. Progress bar updates as each orphan is confirmed
  *
  * API:
  *   GET  /api/disbursements/agent/released   → agent's released lists
- *   GET  /api/disbursements/:id              → list detail + items
- *   GET  /api/receipts/summary/:id           → confirmed count
- *   POST /api/receipts/biometric             → upload fingerprint
+ *   GET  /api/receipts/my-items/:listId      → agent's own orphans in the list
+ *   GET  /api/receipts/summary/:listId       → confirmed count
+ *   POST /api/receipts/confirm               → confirm receipt (no fingerprint)
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { AlertTriangle, User, Users, Handshake, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle, User, Handshake, CheckCircle2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import AppShell from '@/components/AppShell';
@@ -34,21 +34,10 @@ const MONTHS_AR = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
-const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg'];
-const MAX_FILE_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const formatAmount = (n) =>
   n != null ? `${Number(n).toLocaleString('ar-YE')} ر.ي` : '—';
-
-const fileToBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 // ── Tailwind shorthand constants ───────────────────────────────────────────────
 
@@ -56,52 +45,36 @@ const CLS_CARD     = 'bg-white border border-[#e5eaf0] rounded-2xl';
 const CLS_ERR_BANNER = 'flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-bold';
 const CLS_SKEL     = 'bg-gradient-to-r from-[#f0f4f8] via-[#e5eaf0] to-[#f0f4f8] bg-[length:200%_100%] animate-[shimmer_1.4s_infinite] rounded';
 
-// ── FingerprintUploader ────────────────────────────────────────────────────────
+// ── ConfirmReceipt ─────────────────────────────────────────────────────────────
 
-function FingerprintUploader({ item, onUploaded }) {
-  const inputRef              = useRef(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError]     = useState('');
+function ConfirmReceipt({ item, onConfirmed }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState('');
 
-  const handleFile = async (file) => {
-    if (!file) return;
-
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      setError('يُقبل PNG أو JPEG فقط');
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      setError('الحجم الأقصى 3 ميغابايت');
-      return;
-    }
-
-    setUploading(true);
+  const handleConfirm = async () => {
+    if (!window.confirm(`هل سلّمت المبلغ لـ ${item.beneficiary_name}؟`)) return;
+    setSaving(true);
     setError('');
     try {
-      const base64 = await fileToBase64(file);
-      await api.post('/receipts/biometric', {
-        itemId:            item.id,
-        fingerprintBase64: base64,
-        mimeType:          file.type,
-      });
-      onUploaded(item.id);
+      await api.post('/receipts/confirm', { itemId: item.id });
+      onConfirmed(item.id);
     } catch (err) {
-      console.error('Error uploading fingerprint:', err);
-      setError(err.response?.data?.error || 'فشل رفع البصمة');
+      console.error('Error confirming receipt:', err);
+      setError(err.response?.data?.error || 'فشل تأكيد الاستلام');
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
   };
 
   // Already confirmed
-  if (item.biometric_confirmed_at) {
+  if (item.confirmed_at) {
     return (
       <div className="flex flex-col items-end gap-[0.15rem] shrink-0">
         <span className="inline-flex items-center gap-1.5 text-[0.8rem] font-bold text-[#059669] bg-[#ecfdf5] border border-[#6ee7b7] rounded-lg px-3 py-1.5 whitespace-nowrap">
           <CheckCircle2 size={15} strokeWidth={2} /> تم التأكيد
         </span>
         <span className="text-[0.68rem] text-gray-400">
-          {new Date(item.biometric_confirmed_at).toLocaleDateString('ar-YE', { dateStyle: 'short' })}
+          {new Date(item.confirmed_at).toLocaleDateString('ar-YE', { dateStyle: 'short' })}
         </span>
       </div>
     );
@@ -109,21 +82,12 @@ function FingerprintUploader({ item, onUploaded }) {
 
   return (
     <div className="flex flex-col items-end gap-1.5 shrink-0">
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ALLOWED_MIME_TYPES.join(',')}
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
-      />
       <button
-        className={`inline-flex items-center gap-1.5 px-4 py-2 bg-[#1B5E8C] text-white font-cairo text-[0.82rem] font-bold border-none rounded-[0.625rem] cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-[#134569] disabled:opacity-60 disabled:cursor-not-allowed ${uploading ? 'opacity-60 cursor-not-allowed' : ''}`}
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
+        className={`inline-flex items-center gap-1.5 px-4 py-2 bg-[#1B5E8C] text-white font-cairo text-[0.82rem] font-bold border-none rounded-[0.625rem] cursor-pointer transition-colors duration-150 whitespace-nowrap hover:bg-[#134569] disabled:opacity-60 disabled:cursor-not-allowed`}
+        onClick={handleConfirm}
+        disabled={saving}
       >
-        {uploading
-          ? <><Spinner size="xs" /> جارٍ الرفع…</>
-          : '📷 رفع البصمة'}
+        {saving ? <><Spinner size="xs" /> جارٍ الحفظ…</> : '✅ تأكيد الاستلام'}
       </button>
       {error && <p className="text-[0.72rem] text-red-600 m-0">{error}</p>}
     </div>
@@ -177,7 +141,7 @@ function ListPicker({ onSelect }) {
       <EmptyState
         icon={<span className="text-5xl">📋</span>}
         heading="لا توجد كشوف صرف جاهزة"
-        description="ستظهر هنا الكشوف الشهرية بعد أن يصدرها المدير العام ويصبح بإمكانك رفع بصمات الاستلام."
+        description="ستظهر هنا الكشوف الشهرية بعد أن يصدرها المدير العام ويصبح بإمكانك تأكيد استلام الأيتام الذين سجّلتهم."
         card
         className="min-h-[280px] p-10"
       />
@@ -186,7 +150,7 @@ function ListPicker({ onSelect }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[0.88rem] font-semibold text-[#6b7a8d] m-0">اختر كشف الصرف الذي تريد رفع بصمات استلامه:</p>
+      <p className="text-[0.88rem] font-semibold text-[#6b7a8d] m-0">اختر كشف الصرف الذي تريد تأكيد استلامه:</p>
       <div className="flex flex-col gap-3">
         {lists.map((list) => {
           const confirmed = Number(list.confirmed_items ?? 0);
@@ -205,7 +169,7 @@ function ListPicker({ onSelect }) {
                   {MONTHS_AR[list.month]} {list.year}
                 </span>
                 <span className="text-[0.75rem] font-medium text-[#6b7a8d]">
-                  {done ? '🎉 اكتمل' : `${confirmed} من ${total} بصمة`}
+                  {done ? '🎉 اكتمل' : `${confirmed} من ${total} يتيم`}
                 </span>
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
@@ -241,7 +205,7 @@ function BatchView({ listId, onBack }) {
     setError('');
     try {
       const [detailRes, summaryRes] = await Promise.all([
-        api.get(`/disbursements/${listId}`),
+        api.get(`/receipts/my-items/${listId}`),
         api.get(`/receipts/summary/${listId}`),
       ]);
       setListDetail(detailRes.data);
@@ -256,14 +220,14 @@ function BatchView({ listId, onBack }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleUploaded = (itemId) => {
+  const handleConfirmed = (itemId) => {
     setListDetail((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         items: prev.items.map((i) =>
           i.id === itemId
-            ? { ...i, biometric_confirmed_at: new Date().toISOString() }
+            ? { ...i, confirmed_at: new Date().toISOString() }
             : i
         ),
       };
@@ -277,16 +241,16 @@ function BatchView({ listId, onBack }) {
     );
   };
 
-  // Only show items assigned to this agent
-  const items = (listDetail?.items || []).filter((i) => i.included);
+  // The API already returns only the orphans this agent registered
+  const items = listDetail?.items || [];
 
   const confirmed = Number(summary?.confirmed_items ?? 0);
   const total     = Number(summary?.total_items ?? items.length);
   const pct       = total > 0 ? Math.round((confirmed / total) * 100) : 0;
   const allDone   = pct === 100 && total > 0;
 
-  const month = listDetail?.month;
-  const year  = listDetail?.year;
+  const month = listDetail?.list?.month;
+  const year  = listDetail?.list?.year;
 
   return (
     <div className="flex flex-col gap-5">
@@ -301,14 +265,14 @@ function BatchView({ listId, onBack }) {
         </button>
         <div>
           <h2 className="text-[1.45rem] font-extrabold text-[#0d3d5c] m-0 mb-1 flex items-center gap-2.5 flex-wrap">
-            بصمات الاستلام
+            تأكيد الاستلام
             {month && year && (
               <span className="text-[0.78rem] font-bold text-[#1d4ed8] bg-[#dbeafe] border border-[#bfdbfe] rounded-lg px-2.5 py-1">
                 {MONTHS_AR[month]} {year}
               </span>
             )}
           </h2>
-          <p className="text-[0.82rem] text-[#6b7a8d] m-0">التقط بصمة كل مستفيد بعد تسليم المبلغ يدوياً</p>
+          <p className="text-[0.82rem] text-[#6b7a8d] m-0">أكّد استلام كل يتيم سجّلته بعد تسليم المبلغ يدوياً</p>
         </div>
       </div>
 
@@ -319,7 +283,7 @@ function BatchView({ listId, onBack }) {
         <div className={`${CLS_CARD} px-6 py-5`}>
           <div className="flex justify-between items-center mb-2.5">
             <span className="text-[0.88rem] font-bold text-[#374151]">
-              {allDone ? '🎉 اكتملت جميع البصمات!' : `${confirmed} من ${total} مستفيد`}
+              {allDone ? '🎉 اكتمل تأكيد جميع الأيتام!' : `${confirmed} من ${total} يتيم`}
             </span>
             <span
               className="text-[1.1rem] font-extrabold"
@@ -341,7 +305,7 @@ function BatchView({ listId, onBack }) {
           </div>
           {allDone && (
             <p className="flex items-center gap-1.5 text-[0.82rem] text-[#059669] font-semibold mt-2.5 mb-0">
-              <CheckCircle2 size={16} /> رائع! تم رفع جميع بصمات هذا الكشف بنجاح.
+              <CheckCircle2 size={16} /> رائع! تم تأكيد استلام جميع الأيتام في هذا الكشف.
             </p>
           )}
         </div>
@@ -367,7 +331,7 @@ function BatchView({ listId, onBack }) {
       {!loading && items.length === 0 && !error && (
         <EmptyState
           icon={<span className="text-4xl">📋</span>}
-          description="لا توجد بنود مشمولة في هذا الكشف باسمك"
+          description="لا يوجد أيتام مسجّلون باسمك في هذا الكشف"
           card
           className="min-h-[200px]"
         />
@@ -379,13 +343,11 @@ function BatchView({ listId, onBack }) {
           {items.map((item) => (
             <div
               key={item.id}
-              className={`${CLS_CARD} px-5 py-4 flex items-center gap-4 transition-colors duration-150 sm:flex-row flex-wrap ${item.biometric_confirmed_at ? 'border-[#a7f3d0] bg-[#f0fdf4]' : ''}`}
+              className={`${CLS_CARD} px-5 py-4 flex items-center gap-4 transition-colors duration-150 sm:flex-row flex-wrap ${item.confirmed_at ? 'border-[#a7f3d0] bg-[#f0fdf4]' : ''}`}
             >
               {/* Avatar */}
               <div className="w-[42px] h-[42px] rounded-full bg-[#f0f4f8] flex items-center justify-center shrink-0 text-[#64748b]">
-                {item.beneficiary_type === 'orphan'
-                  ? <User size={18} strokeWidth={1.8} />
-                  : <Users size={18} strokeWidth={1.8} />}
+                <User size={18} strokeWidth={1.8} />
               </div>
 
               {/* Info */}
@@ -402,8 +364,8 @@ function BatchView({ listId, onBack }) {
                 </div>
               </div>
 
-              {/* Upload / Confirmed */}
-              <FingerprintUploader item={item} onUploaded={handleUploaded} />
+              {/* Confirm / Confirmed */}
+              <ConfirmReceipt item={item} onConfirmed={handleConfirmed} />
             </div>
           ))}
         </div>
@@ -433,9 +395,9 @@ export default function AgentReceiptsBatchPage() {
         {/* Page heading — only on list-picker view */}
         {!listId && (
           <div>
-            <h1 className="text-[1.55rem] font-extrabold text-[#0d3d5c] m-0 mb-1">رفع بصمات الاستلام</h1>
+            <h1 className="text-[1.55rem] font-extrabold text-[#0d3d5c] m-0 mb-1">تأكيد استلام الأيتام</h1>
             <p className="text-[0.83rem] text-[#6b7a8d] m-0">
-              اختر كشف الصرف ثم التقط بصمة كل مستفيد بعد تسليم المبلغ
+              اختر كشف الصرف ثم أكّد استلام كل يتيم سجّلته بعد تسليم المبلغ
             </p>
           </div>
         )}

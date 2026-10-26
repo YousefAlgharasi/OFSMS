@@ -3,6 +3,8 @@
  * Mounted at: /api/receipts
  *
  * POST /api/receipts/biometric          → agent uploads a fingerprint receipt
+ * POST /api/receipts/confirm            → agent confirms receipt for their own orphan
+ * GET  /api/receipts/my-items/:listId   → agent's own orphans in a released list
  * GET  /api/receipts                    → supervisor/GM view all receipts (filterable)
  * GET  /api/receipts/summary/:listId    → agent checks their completion for a list
  */
@@ -35,6 +37,26 @@ router.post(
       .withMessage('نوع الملف يجب أن يكون image/png أو image/jpeg'),
   ],
   controller.uploadBiometricReceipt
+);
+
+// ── POST /api/receipts/confirm ────────────────────────────────────────────────
+// Agent confirms that one of the orphans they registered received the money
+router.post(
+  '/confirm',
+  authenticate,
+  authorize('agent'),
+  [body('itemId').isUUID().withMessage('معرّف بند الصرف غير صحيح')],
+  controller.confirmReceipt
+);
+
+// ── GET /api/receipts/my-items/:listId ────────────────────────────────────────
+// Agent: only the orphans this agent registered, for one released list
+router.get(
+  '/my-items/:listId',
+  authenticate,
+  authorize('agent'),
+  [param('listId').isUUID().withMessage('listId غير صحيح')],
+  controller.getMyListItems
 );
 
 // ── GET /api/receipts ─────────────────────────────────────────────────────────

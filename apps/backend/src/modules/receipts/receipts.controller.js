@@ -73,6 +73,45 @@ const getReceipts = async (req, res, next) => {
 };
 
 /**
+ * POST /api/receipts/confirm
+ * Agent confirms receipt for one of their own orphans (no fingerprint).
+ */
+const confirmReceipt = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    const receipt = await service.confirmReceipt({
+      itemId: req.body.itemId,
+      agentId: req.user.id,
+    });
+    return res.status(201).json({ message: 'تم تأكيد الاستلام', receipt });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+};
+
+/**
+ * GET /api/receipts/my-items/:listId
+ * Orphans registered by the logged-in agent, in one released list.
+ */
+const getMyListItems = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ errors: errors.array() });
+    }
+    const data = await service.getAgentListItems(req.user.id, req.params.listId);
+    return res.json(data);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+};
+
+/**
  * GET /api/receipts/summary/:listId
  */
 const getAgentReceiptSummary = async (req, res, next) => {
@@ -150,4 +189,4 @@ const getSupervisorLog = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadBiometricReceipt, getReceipts, getAgentReceiptSummary, batchConfirm, getMyBatch, getSupervisorLog };
+module.exports = { uploadBiometricReceipt, confirmReceipt, getMyListItems, getReceipts, getAgentReceiptSummary, batchConfirm, getMyBatch, getSupervisorLog };

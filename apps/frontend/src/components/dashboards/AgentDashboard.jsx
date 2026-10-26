@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
-import { Users, CheckCircle, Clock, BookOpen, ClipboardList, AlertTriangle, Star, Home, Fingerprint } from 'lucide-react';
+import { Users, CheckCircle, Clock, BookOpen, ClipboardList, AlertTriangle, Star, Home } from 'lucide-react';
 import StatusBadge, { STATUS_MAP } from '@/components/ui/StatusBadge';
 import StatCard from '@/components/ui/StatCard';
 
@@ -276,7 +276,7 @@ export default function AgentDashboard() {
             { icon: <Users size={20}/>,       label: 'تسجيل يتيم جديد',  href: '/orphans/new',       color: '#1B5E8C' },
             { icon: <Home size={20}/>,        label: 'تسجيل أسرة جديدة', href: '/families/new',      color: '#7c3aed' },
             { icon: <BookOpen size={20}/>,    label: 'رفع تقرير حفظ',     href: '/quran-reports/new', color: '#059669' },
-            { icon: <Fingerprint size={20}/>, label: 'رفع بصمات الصرف',   href: '/receipts/batch',    color: '#db2777' },
+            { icon: <CheckCircle size={20}/>, label: 'تأكيد الاستلام',    href: '/receipts/batch',    color: '#db2777' },
             { icon: <ClipboardList size={20}/>, label: 'عرض أيتامي',       href: '/my-orphans',        color: '#d97706' },
           ].map(({ icon, label, href, color }) => (
             <button key={href} className="action-card" onClick={() => router.push(href)}
