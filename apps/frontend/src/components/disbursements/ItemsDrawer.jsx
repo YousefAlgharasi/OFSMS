@@ -237,7 +237,7 @@ export default function ItemsDrawer({ listId, listInfo, role, onClose, onAction 
                       {item.sponsor_name && <span>· {item.sponsor_name}</span>}
                       {item.biometric_confirmed_at && (
                         <span className="text-emerald-500 font-bold flex items-center gap-0.5">
-                          <CheckCircle2 size={12} /> بصمة
+                          <CheckCircle2 size={12} /> تم التسليم
                         </span>
                       )}
                     </div>
