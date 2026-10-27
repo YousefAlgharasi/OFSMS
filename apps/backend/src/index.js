@@ -52,7 +52,9 @@ app.use(cookieParser());
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  // `commit` lets you check which version is live (set by Render on every deploy)
+  const commit = (process.env.RENDER_GIT_COMMIT || '').slice(0, 7) || undefined;
+  res.json({ status: 'ok', commit, timestamp: new Date().toISOString() });
 });
 
 // ── Local static files (dev storage fallback) ────────────────────────────────

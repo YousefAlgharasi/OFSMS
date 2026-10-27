@@ -46,10 +46,13 @@ export default function SupervisorDashboard() {
   const quranReports  = data?.pending_quran_reports || [];
   const disbDate      = data?.next_disbursement_date;
   const daysLeft      = disbDate ? daysUntil(disbDate) : null;
+  // An older backend does not send current_disbursement at all: then the list state is
+  // unknown and we must not claim "no list was created"
+  const disbKnown     = data?.current_disbursement !== undefined;
   const disbList      = data?.current_disbursement || null; // this disbursement's list, if generated
   const disbStatus    = disbList?.status || null;
   // Only a missing / draft / rejected list still needs the supervisor
-  const disbNeedsAction = !disbStatus || disbStatus === 'draft' || disbStatus === 'rejected';
+  const disbNeedsAction = disbKnown && (!disbStatus || disbStatus === 'draft' || disbStatus === 'rejected');
 
   const today = new Date().toLocaleDateString('ar-YE', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -126,7 +129,7 @@ export default function SupervisorDashboard() {
       </div>
 
       {/* Disbursement banner — reflects the real state of this month's list */}
-      {!loading && daysLeft !== null && daysLeft <= 5 && (() => {
+      {!loading && disbKnown && daysLeft !== null && daysLeft <= 5 && (() => {
         const dayText = daysLeft === 0 ? 'موعد الصرف اليوم!' : `${daysLeft} ${daysLeft === 1 ? 'يوم' : 'أيام'} على موعد الصرف`;
         const urgent  = daysLeft <= 2;
         const tones = {
