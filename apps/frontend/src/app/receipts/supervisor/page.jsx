@@ -90,7 +90,7 @@ export default function SupervisorBiometricLogPage() {
         }
       } catch (err) {
         console.error('Error fetching supervisor log:', err);
-        setError(err.response?.data?.error || 'تعذّر تحميل سجل البصمات.');
+        setError(err.response?.data?.error || 'تعذّر تحميل سجل الاستلام.');
       } finally {
         setLoading(false);
       }
@@ -107,7 +107,7 @@ export default function SupervisorBiometricLogPage() {
 
         {/* Header row */}
         <PageHeader
-          title="متابعة بصمات الصرف"
+          title="متابعة استلام الصرف"
           subtitle="عرض تقرير إنجاز المندوبين لتسليم مبالغ الصرف"
           subtitleClassName="text-[0.9rem]"
           className="items-center"
@@ -137,7 +137,7 @@ export default function SupervisorBiometricLogPage() {
         ) : !logData ? (
           <EmptyState
             heading="لا توجد بيانات"
-            description="لم يتم العثور على سجل بصمات لهذا الكشف."
+            description="لم يتم العثور على سجل استلام لهذا الكشف."
             card
             className="py-16 px-8"
           />
@@ -214,7 +214,7 @@ export default function SupervisorBiometricLogPage() {
                     <table className="w-full border-collapse text-right">
                       <thead>
                         <tr>
-                          {['المستفيد', 'النوع', 'الحالة', 'البصمة'].map((h) => (
+                          {['المستفيد', 'النوع', 'الحالة', 'إثبات الاستلام'].map((h) => (
                             <th key={h} className="px-3 py-3 border-b-2 border-[#e5eaf0] text-[#6b7a8d] text-[0.85rem] font-bold">
                               {h}
                             </th>
@@ -255,6 +255,10 @@ export default function SupervisorBiometricLogPage() {
                                   >
                                     عرض البصمة 👆
                                   </a>
+                                ) : item.receipt_id && item.confirmed_at ? (
+                                  <span className="text-[0.8rem] text-[#6b7a8d]">
+                                    تأكيد المندوب {new Date(item.confirmed_at).toLocaleDateString('ar-YE', { dateStyle: 'short' })}
+                                  </span>
                                 ) : (
                                   <span className="text-[#6b7a8d]">—</span>
                                 )}

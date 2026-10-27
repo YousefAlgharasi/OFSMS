@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Button from '@/components/ui/Button';
 import StatCard from '@/components/ui/StatCard';
-import { ClipboardList, BookOpen, Banknote, Calendar, Siren, AlarmClock, CheckCircle, AlertTriangle, FileText, Fingerprint } from 'lucide-react';
+import { ClipboardList, BookOpen, Banknote, Calendar, Siren, AlarmClock, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 
 const formatDate = (iso) => {
   if (!iso) return '—';
@@ -25,25 +25,6 @@ const daysUntil = (iso) => {
 
 function Skel({ w, h, r }) {
   return <div className="skel" style={{ width: w, height: h, borderRadius: r || 6 }} />;
-}
-
-function QueueItem({ item, onClick }) {
-  return (
-    <div className="queue-item" onClick={onClick}>
-      <div className="queue-avatar">
-        {item.name?.charAt(0) || '؟'}
-      </div>
-      <div className="queue-info">
-        <div className="queue-name">{item.name}</div>
-        <div className="queue-meta">
-          <span className="queue-tag">{item.record_type === 'orphan' ? 'يتيم' : 'أسرة'}</span>
-          <span className="queue-gov">{item.governorate_ar || '—'}</span>
-          <span className="queue-agent">المندوب: {item.agent_name || '—'}</span>
-        </div>
-      </div>
-      <div className="queue-date">{formatDate(item.created_at)}</div>
-    </div>
-  );
 }
 
 export default function SupervisorDashboard() {
@@ -193,11 +174,20 @@ export default function SupervisorDashboard() {
           ) : (
             <div className="queue-list">
               {allPending.slice(0, 5).map((item) => (
-                <QueueItem
-                  key={item.id}
-                  item={item}
-                  onClick={() => router.push('/registrations')}
-                />
+                <div key={item.id} className="queue-item" onClick={() => router.push('/registrations')}>
+                  <div className="queue-avatar">
+                    {item.name?.charAt(0) || '؟'}
+                  </div>
+                  <div className="queue-info">
+                    <div className="queue-name">{item.name}</div>
+                    <div className="queue-meta">
+                      <span className="queue-tag">{item.record_type === 'orphan' ? 'يتيم' : 'أسرة'}</span>
+                      <span className="queue-gov">{item.governorate_ar || '—'}</span>
+                      <span className="queue-agent">المندوب: {item.agent_name || '—'}</span>
+                    </div>
+                  </div>
+                  <div className="queue-date">{formatDate(item.created_at)}</div>
+                </div>
               ))}
             </div>
           )}
@@ -261,7 +251,7 @@ export default function SupervisorDashboard() {
             { icon: <ClipboardList size={20}/>, label: 'مراجعة التسجيلات',    href: '/registrations',       color: '#f59e0b' },
             { icon: <BookOpen size={20}/>,     label: 'مراجعة تقارير الحفظ', href: '/quran-reports',       color: '#8b5cf6' },
             { icon: <Banknote size={20}/>,     label: 'مراجعة كشف الصرف',    href: '/disbursements',       color: '#ef4444' },
-            { icon: <Fingerprint size={20}/>,  label: 'متابعة البصمات',       href: '/receipts/supervisor', color: '#db2777' },
+            { icon: <CheckCircle size={20}/>, label: 'متابعة الاستلام',      href: '/receipts/supervisor', color: '#db2777' },
             { icon: <FileText size={20}/>,     label: 'التقارير والتصدير',    href: '/reports',             color: '#059669' },
           ].map(({ icon, label, href, color }) => (
             <button
