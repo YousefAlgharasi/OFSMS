@@ -125,9 +125,18 @@ const getSupervisorPendingCounts = async () => {
       (SELECT COUNT(*) FROM families  WHERE status = 'under_review')       AS pending_families,
       (SELECT COUNT(*) FROM quran_reports WHERE status = 'pending')         AS pending_quran_reports,
       (SELECT COUNT(*) FROM disbursement_lists
-       WHERE status IN ('draft','supervisor_approved'))                      AS pending_disbursements
+       WHERE status = 'draft')                                               AS pending_disbursements
   `);
   return row;
+};
+
+// The disbursement list of a given month (null when none was generated yet)
+const getDisbursementListForMonth = async (month, year) => {
+  const { rows } = await query(
+    `SELECT id, status, month, year FROM disbursement_lists WHERE month = $1 AND year = $2`,
+    [month, year]
+  );
+  return rows[0] || null;
 };
 
 const getSupervisorPendingOrphans = async () => {
@@ -230,6 +239,7 @@ module.exports = {
   getAgentRejectedSubmissions,
   // Supervisor
   getSupervisorPendingCounts,
+  getDisbursementListForMonth,
   getSupervisorPendingOrphans,
   getSupervisorPendingFamilies,
   getSupervisorPendingQuranReports,
