@@ -361,9 +361,8 @@ const getSupervisorLog = async (listId) => {
        u.full_name AS agent_name,
        abc.confirmed_at AS batch_confirmed_at
      FROM disbursement_items di
-     LEFT JOIN orphans o ON o.id = di.orphan_id
-     LEFT JOIN families f ON f.id = di.family_id
-     JOIN users u ON u.id = COALESCE(o.agent_id, f.agent_id)
+     JOIN orphans o ON o.id = di.orphan_id
+     JOIN users u ON u.id = o.agent_id
      LEFT JOIN agent_batch_confirmations abc ON abc.list_id = di.list_id AND abc.agent_id = u.id
      WHERE di.list_id = $1 AND di.included = TRUE`,
     [listId]
@@ -373,15 +372,14 @@ const getSupervisorLog = async (listId) => {
   const { rows: items } = await query(
     `SELECT 
        di.id AS item_id, 
-       COALESCE(o.agent_id, f.agent_id) AS agent_id,
-       COALESCE(o.full_name, f.family_name) AS beneficiary_name,
-       CASE WHEN di.orphan_id IS NOT NULL THEN 'orphan' ELSE 'family' END AS beneficiary_type,
+       o.agent_id AS agent_id,
+       o.full_name AS beneficiary_name,
+       'orphan' AS beneficiary_type,
        br.id AS receipt_id,
        br.fingerprint_key,
        br.confirmed_at
      FROM disbursement_items di
-     LEFT JOIN orphans o ON o.id = di.orphan_id
-     LEFT JOIN families f ON f.id = di.family_id
+     JOIN orphans o ON o.id = di.orphan_id
      LEFT JOIN biometric_receipts br ON br.item_id = di.id
      WHERE di.list_id = $1 AND di.included = TRUE`,
     [listId]

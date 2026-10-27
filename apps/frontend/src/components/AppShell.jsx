@@ -69,6 +69,7 @@ const NAV_ITEMS = {
       items: [
         { label: 'كشف الصرف',     href: '/disbursements',         icon: DollarSign },
         { label: 'سجل الإصدارات', href: '/disbursements/history', icon: Archive },
+        { label: 'متابعة الاستلام', href: '/receipts/supervisor',  icon: CheckCircle2 },
       ],
     },
     {
@@ -127,6 +128,7 @@ const NAV_ITEMS = {
       group: 'المالية',
       items: [
         { label: 'كشف الصرف', href: '/disbursements', icon: DollarSign },
+        { label: 'متابعة الاستلام', href: '/receipts/supervisor', icon: CheckCircle2 },
       ],
     },
     {
@@ -233,8 +235,18 @@ const ROLE_EXTRA_PATHS = {
   finance: ['/in-kind', '/educational', '/evaluations'],
 };
 
+// Detail pages a role may open even though they are not menu items
+// (e.g. the supervisor's "view full file" link from the registrations queue)
+const ROLE_EXTRA_PATTERNS = {
+  supervisor: [/^\/(orphans|families)\/(?!new$|gifted$)[^/]+$/],
+};
+
 const roleCanAccessPath = (role, pathname) => {
   if (!role || PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return true;
+  }
+
+  if ((ROLE_EXTRA_PATTERNS[role] || []).some((re) => re.test(pathname))) {
     return true;
   }
 
