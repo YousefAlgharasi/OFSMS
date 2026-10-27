@@ -46,6 +46,10 @@ export default function SupervisorDashboard() {
   const quranReports  = data?.pending_quran_reports || [];
   const disbDate      = data?.next_disbursement_date;
   const daysLeft      = disbDate ? daysUntil(disbDate) : null;
+  const disbList      = data?.current_disbursement || null; // this disbursement's list, if generated
+  const disbStatus    = disbList?.status || null;
+  // Only a missing / draft / rejected list still needs the supervisor
+  const disbNeedsAction = !disbStatus || disbStatus === 'draft' || disbStatus === 'rejected';
 
   const today = new Date().toLocaleDateString('ar-YE', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -114,33 +118,46 @@ export default function SupervisorDashboard() {
               icon={<Calendar size={20}/>} label="موعد الصرف القادم"
               value={daysLeft !== null ? `${daysLeft} يوم` : '—'}
               sub={disbDate ? formatDate(disbDate) : ''}
-              color={daysLeft !== null && daysLeft <= 3 ? '#ef4444' : '#10b981'}
-              urgent={daysLeft !== null && daysLeft <= 3}
+              color={daysLeft !== null && daysLeft <= 3 && disbNeedsAction ? '#ef4444' : '#10b981'}
+              urgent={daysLeft !== null && daysLeft <= 3 && disbNeedsAction}
             />
           </>
         )}
       </div>
 
-      {/* Disbursement countdown banner */}
-      {!loading && daysLeft !== null && daysLeft <= 5 && (
-        <div className="countdown-banner" style={{
-          borderColor: daysLeft <= 2 ? '#fca5a5' : '#fed7aa',
-          background:  daysLeft <= 2 ? '#fef2f2' : '#fff7ed',
-        }}>
-          <div className="countdown-icon">{daysLeft <= 2 ? <Siren size={24}/> : <AlarmClock size={24}/>}</div>
-          <div>
-            <strong style={{ color: daysLeft <= 2 ? '#b91c1c' : '#9a3412' }}>
-              {daysLeft === 0 ? 'موعد الصرف اليوم!' : `${daysLeft} ${daysLeft === 1 ? 'يوم' : 'أيام'} على موعد الصرف`}
-            </strong>
-            <p style={{ color: daysLeft <= 2 ? '#dc2626' : '#c2410c', margin: '.25rem 0 0', fontSize: '.82rem' }}>
-              يرجى مراجعة كشف الصرف واعتماده للقسم المالي في أقرب وقت
-            </p>
+      {/* Disbursement banner — reflects the real state of this month's list */}
+      {!loading && daysLeft !== null && daysLeft <= 5 && (() => {
+        const dayText = daysLeft === 0 ? 'موعد الصرف اليوم!' : `${daysLeft} ${daysLeft === 1 ? 'يوم' : 'أيام'} على موعد الصرف`;
+        const urgent  = daysLeft <= 2;
+        const tones = {
+          warn:  { border: urgent ? '#fca5a5' : '#fed7aa', bg: urgent ? '#fef2f2' : '#fff7ed', title: urgent ? '#b91c1c' : '#9a3412', text: urgent ? '#dc2626' : '#c2410c' },
+          bad:   { border: '#fca5a5', bg: '#fef2f2', title: '#b91c1c', text: '#dc2626' },
+          info:  { border: '#bfdbfe', bg: '#eff6ff', title: '#1d4ed8', text: '#2563eb' },
+          good:  { border: '#a7f3d0', bg: '#ecfdf5', title: '#047857', text: '#059669' },
+        };
+        const states = {
+          none:                { tone: 'warn', icon: urgent ? <Siren size={24}/> : <AlarmClock size={24}/>, title: dayText, text: 'لم يتم إنشاء كشف الصرف لهذا الشهر بعد', action: 'إنشاء الكشف ←' },
+          draft:               { tone: 'warn', icon: urgent ? <Siren size={24}/> : <AlarmClock size={24}/>, title: dayText, text: 'يرجى مراجعة كشف الصرف واعتماده للقسم المالي في أقرب وقت', action: 'مراجعة الكشف ←' },
+          rejected:            { tone: 'bad',  icon: <AlertTriangle size={24}/>, title: 'تم رفض كشف الصرف', text: 'الكشف مرفوض ويحتاج إلى معالجة قبل موعد الصرف', action: 'عرض الكشف ←' },
+          supervisor_approved: { tone: 'info', icon: <CheckCircle size={24}/>,   title: 'تم اعتماد كشف الصرف', text: 'الكشف جاهز من جهة المشرف — بانتظار اعتماد القسم المالي', action: 'عرض الكشف ←' },
+          finance_approved:    { tone: 'info', icon: <CheckCircle size={24}/>,   title: 'اعتمده القسم المالي', text: 'بانتظار إصدار الكشف من المدير العام', action: 'عرض الكشف ←' },
+          released:            { tone: 'good', icon: <CheckCircle size={24}/>,   title: 'تم إصدار كشف الصرف', text: 'الكشف جاهز وتم إصداره للمندوبين', action: 'عرض الكشف ←' },
+        };
+        const st = states[disbStatus || 'none'] || states.none;
+        const tone = tones[st.tone];
+        return (
+          <div className="countdown-banner" style={{ borderColor: tone.border, background: tone.bg }}>
+            <div className="countdown-icon" style={{ color: tone.title }}>{st.icon}</div>
+            <div>
+              <strong style={{ color: tone.title }}>{st.title}</strong>
+              <p style={{ color: tone.text, margin: '.25rem 0 0', fontSize: '.82rem' }}>{st.text}</p>
+            </div>
+            <button className="alert-action" onClick={() => router.push('/disbursements')}>
+              {st.action}
+            </button>
           </div>
-          <button className="alert-action" onClick={() => router.push('/disbursements')}>
-            مراجعة الكشف ←
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Two-col: pending queue + quran reports */}
       <div className="two-col">

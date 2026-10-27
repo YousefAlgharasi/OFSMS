@@ -66,11 +66,15 @@ const getAgentDashboard = async (agentId) => {
 
 // ── Supervisor Dashboard ───────────────────────────────────────────────────────
 const getSupervisorDashboard = async () => {
-  const [counts, pendingOrphans, pendingFamilies, pendingQuranReports] = await Promise.all([
+  const nextDisbursement = new Date(getNextDisbursementDate());
+  const [counts, pendingOrphans, pendingFamilies, pendingQuranReports, currentList] = await Promise.all([
     repository.getSupervisorPendingCounts(),
     repository.getSupervisorPendingOrphans(),
     repository.getSupervisorPendingFamilies(),
     repository.getSupervisorPendingQuranReports(),
+    // The list that belongs to the upcoming disbursement date, so the dashboard
+    // can tell whether it still needs attention or is already approved
+    repository.getDisbursementListForMonth(nextDisbursement.getMonth() + 1, nextDisbursement.getFullYear()),
   ]);
 
   return {
@@ -85,6 +89,7 @@ const getSupervisorDashboard = async () => {
     pending_families:      pendingFamilies,
     pending_quran_reports: pendingQuranReports,
     next_disbursement_date: getNextDisbursementDate(),
+    current_disbursement:   currentList, // { id, status, month, year } | null
   };
 };
 
