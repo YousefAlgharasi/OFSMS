@@ -10,6 +10,7 @@
     h1{font-size:1.2rem;margin:0 0 .6rem}
     p{margin:0 0 1.2rem;line-height:1.8;color:#475569;font-size:.92rem}
     a,button{display:inline-block;margin:.25rem;padding:.6rem 1.2rem;border-radius:.6rem;border:0;background:#1B5E8C;color:#fff;font-size:.9rem;font-weight:700;text-decoration:none;cursor:pointer;font-family:inherit}
+    .where{margin:1rem 0 0;font-size:.7rem;color:#94a3b8;word-break:break-all}
     a.alt{background:#e8f1f8;color:#1B5E8C}
   </style>
 </head>
@@ -19,6 +20,12 @@
     <p>هذه الصفحة لم تُحفظ على جهازك بعد. افتحها مرة واحدة أثناء وجود الإنترنت لتصبح متاحة دون اتصال.</p>
     <button onclick="location.reload()">إعادة المحاولة</button>
     <a class="alt" href="/dashboard">الصفحة الرئيسية</a>
+    <p class="where" id="where" dir="ltr"></p>
   </div>
+  <script>
+    // Which address could not be shown (helps support); also try again by itself when the connection returns
+    document.getElementById('where').textContent = location.host + location.pathname;
+    window.addEventListener('online', function () { location.reload(); });
+  </script>
 </body>
 </html>

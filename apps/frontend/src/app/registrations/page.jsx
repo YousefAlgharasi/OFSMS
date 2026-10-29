@@ -23,7 +23,6 @@ import api from '@/lib/api';
 import AppShell from '@/components/AppShell';
 import Textarea from '@/components/ui/Textarea';
 import EmptyState from '@/components/ui/EmptyState';
-import StatPill from '@/components/ui/StatPill';
 import PageHeader from '@/components/ui/PageHeader';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -373,12 +372,6 @@ export default function RegistrationsPage() {
   const orphanCount = queue.filter((r) => r.record_type === 'orphan').length;
   const familyCount = queue.filter((r) => r.record_type === 'family').length;
 
-  const STAT_PILLS = [
-    { label: 'إجمالي الطلبات', count: queue.length,  color: '#1B5E8C' },
-    { label: 'أيتام',           count: orphanCount,   color: '#F59E0B' },
-    { label: 'أسر',             count: familyCount,   color: '#10B981' },
-  ];
-
   const FILTER_TABS = [
     { value: 'all',    label: 'الكل',  count: queue.length },
     { value: 'orphan', label: 'أيتام', count: orphanCount },
@@ -421,13 +414,6 @@ export default function RegistrationsPage() {
             </button>
           }
         />
-
-        {/* ── Stat pills ── */}
-        <div className="flex gap-2.5 flex-wrap">
-          {STAT_PILLS.map(({ label, count, color }) => (
-            <StatPill key={label} label={label} count={loading ? '…' : count} color={color} className="flex-1" />
-          ))}
-        </div>
 
         {/* ── Error ── */}
         {error && (

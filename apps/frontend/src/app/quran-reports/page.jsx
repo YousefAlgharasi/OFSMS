@@ -370,21 +370,6 @@ export default function QuranReportsPage() {
 
         {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[0.85rem] text-red-700 flex items-center gap-2"><AlertTriangle size={18} /> {error}</div>}
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-          {[
-            { label: 'إجمالي التقارير', value: reports.length, color: 'text-[#1B5E8C]', bg: 'bg-blue-50', border: 'border-blue-200' },
-            { label: 'قيد المراجعة', value: counts.pending || 0, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
-            { label: 'معتمدة', value: counts.approved || 0, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-            { label: 'مرفوضة', value: counts.rejected || 0, color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200' },
-          ].map(({ label, value, color, bg, border }) => (
-            <div key={label} className={`border-[1.5px] rounded-2xl p-4 flex flex-col items-end gap-1 ${bg} ${border}`}>
-              <span className={`text-[1.9rem] font-extrabold leading-none font-sans ${color}`}>{value}</span>
-              <span className="text-[0.75rem] font-semibold text-gray-500">{label}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Filter tabs */}
         <div className="flex gap-2 flex-wrap">
           {[

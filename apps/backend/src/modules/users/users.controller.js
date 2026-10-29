@@ -107,12 +107,26 @@ const getAuditLogs = async (req, res, next) => {
   }
 };
 
+// ── PATCH /api/users/:id/password ─────────────────────────────────────────────
+const setUserPassword = async (req, res, next) => {
+  try {
+    const user = await service.setUserPassword(req.params.id, req.body.password, req.user.id);
+    return res.json({ message: `تم تغيير كلمة مرور ${user.full_name}` });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+    next(err);
+  }
+};
+
 module.exports = {
   listUsers,
   createUser,
   updateUser,
   deactivateUser,
   activateUser,
+  setUserPassword,
   deleteUser,
   getAuditLogs,
 };

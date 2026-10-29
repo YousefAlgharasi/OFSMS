@@ -19,6 +19,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import api from '../lib/api';
 import { rememberLastPath } from '../lib/offlineStorage';
 import { warmOfflineCache } from '../lib/offlineWarmup';
+import OfflineReadyChip from './OfflineReadyChip';
 import NotificationBell from './NotificationBell';
 import {
   LayoutDashboard, Users, Home, Tag, Handshake, Star,
@@ -243,6 +244,15 @@ const ROLE_EXTRA_PATTERNS = {
   supervisor: [/^\/(orphans|families)\/(?!new$|gifted$)[^/]+$/],
 };
 
+// Every page a role can open from the menu (+ extras): saved on the device after login
+export const getRoleRoutes = (role) => [
+  '/',
+  '/login',
+  '/dashboard',
+  ...flatItems(NAV_ITEMS[role] || []).map((i) => i.href),
+  ...(ROLE_EXTRA_PATHS[role] || []),
+];
+
 const roleCanAccessPath = (role, pathname) => {
   if (!role || PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return true;
@@ -289,10 +299,13 @@ export default function AppShell({ children }) {
   // After login, save the role's pages on the device so they open with no connection
   useEffect(() => {
     if (!user?.role) return undefined;
-    const timer = setTimeout(() => {
-      warmOfflineCache(user.role, ['/', '/login', ...flatItems(NAV_ITEMS[user.role] || []).map((i) => i.href)]).catch(() => {});
-    }, 4000);
-    return () => clearTimeout(timer);
+    const run = () => warmOfflineCache(user.role, getRoleRoutes(user.role)).catch(() => {});
+    const timer = setTimeout(run, 1500);
+    window.addEventListener('online', run); // back online: bring the saved copies up to date
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('online', run);
+    };
   }, [user?.role]);
 
   useEffect(() => {
@@ -600,6 +613,7 @@ export default function AppShell({ children }) {
 
         {/* Page content */}
         <div className="flex-1 p-4 sm:p-6 bg-gray-50 dark:bg-[#0B131B] transition-colors duration-200">
+          <OfflineReadyChip />
           {children}
         </div>
       </main>
