@@ -219,6 +219,33 @@ const deleteUser = async (id, actorId) => {
   return user;
 };
 
+/**
+ * Set a new password for a user (GM only). The password itself is never logged.
+ *
+ * @param {string} id — target user UUID
+ * @param {string} password — new plain password (validated by the route)
+ * @param {string} actorId — GM performing the action
+ */
+const setUserPassword = async (id, password, actorId) => {
+  const passwordHash = await bcrypt.hash(password, 12);
+  const user = await repo.setPasswordHash(id, passwordHash);
+  if (!user) {
+    const err = new Error('المستخدم غير موجود');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  await logAudit({
+    userId:     actorId,
+    action:     'user_password_changed',
+    entityType: 'user',
+    entityId:   id,
+    newValue:   { fullName: user.full_name },
+  });
+
+  return user;
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -227,5 +254,6 @@ module.exports = {
   updateUser,
   deactivateUser,
   activateUser,
+  setUserPassword,
   deleteUser,
 };

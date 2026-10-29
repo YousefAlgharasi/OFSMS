@@ -35,6 +35,8 @@ jobs:
           echo '<!doctype html><title>OFSMS</title>' > www/index.html
           # Shown when the app is opened offline before it has ever been opened online
           cp ../frontend/public/offline.html www/offline.html
+          # In this local copy "retry" must open the real site, not reload the local file
+          sed -i "s#location.reload()#location.href='$SITE_URL/'#g; s#href=\"/dashboard\"#href=\"$SITE_URL/dashboard\"#" www/offline.html
           cat > capacitor.config.json <<JSON
           {
             "appId": "org.namaa.ofsms",

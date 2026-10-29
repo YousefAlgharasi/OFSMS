@@ -170,6 +170,18 @@ const getAuditLogs = async ({ entityType, entityId, limit = 20, offset = 0 } = {
   return rows;
 };
 
+/**
+ * Replace a user's password hash.
+ * @returns {Promise<Object|null>} { id, full_name } or null if not found
+ */
+const setPasswordHash = async (id, passwordHash) => {
+  const { rows } = await query(
+    `UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id, full_name`,
+    [passwordHash, id]
+  );
+  return rows[0] || null;
+};
+
 module.exports = {
   findAllUsers,
   findUserById,
@@ -178,6 +190,7 @@ module.exports = {
   createUser,
   updateUser,
   setUserActive,
+  setPasswordHash,
   deleteUser,
   getAuditLogs,
 };

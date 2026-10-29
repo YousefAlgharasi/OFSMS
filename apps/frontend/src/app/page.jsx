@@ -22,7 +22,7 @@ import { getLastPath } from '../lib/offlineStorage';
 // Maps each role to its home dashboard route
 const ROLE_DASHBOARD = {
   gm:         '/dashboard',
-  supervisor: '/dashboard/supervisor',
+  supervisor: '/dashboard',
   agent:      '/dashboard',
   finance:    '/dashboard',
   sponsor:    '/sponsor/portal',

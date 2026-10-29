@@ -221,10 +221,13 @@ export default function EvaluationsPage() {
       setBeneficiaries(list);
 
       // Preserve or set selected beneficiary
+      // On a laptop the first one opens beside the list; on a phone nothing opens until the user taps
+      // (the details open as a popup there, which must not appear by itself)
+      const wide = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
       setSelectedBeneficiary((prev) => {
-        if (!prev) return list[0] || null;
+        if (!prev) return wide ? list[0] || null : null;
         const exists = list.find((b) => b.id === prev.id && b.type === type);
-        return exists || list[0] || null;
+        return exists || (wide ? list[0] || null : null);
       });
     } catch (err) {
       console.error('Error fetching beneficiaries:', err);
@@ -586,9 +589,29 @@ export default function EvaluationsPage() {
             </div>
 
             {/* ── Left Column: Profile & Evaluation History (8 cols) ─────────── */}
-            <div className="lg:col-span-8 space-y-5">
+            {/* On a phone the details open as a full-screen popup (so it is obvious that something opened);
+                on large screens they stay in the side column as before */}
+            <div
+              className={`lg:col-span-8 space-y-5 ${
+                selectedBeneficiary
+                  ? 'fixed inset-0 z-30 overflow-y-auto overscroll-contain bg-[#f8fafc] p-4 pb-24 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0 lg:pb-0 animate-in fade-in slide-in-from-bottom-6 duration-200 lg:animate-none'
+                  : ''
+              }`}
+            >
+              {selectedBeneficiary && (
+                <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-1 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBeneficiary(null)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 active:bg-slate-100"
+                  >
+                    <ArrowRight className="h-4 w-4" /> رجوع
+                  </button>
+                  <span className="truncate text-sm font-extrabold text-slate-900">{selectedBeneficiary.name}</span>
+                </div>
+              )}
               {!selectedBeneficiary ? (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 shadow-xs">
+                <div className="hidden lg:block bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400 shadow-xs">
                   <User className="w-12 h-12 mx-auto mb-3 opacity-40 text-[#1B5E8C]" />
                   <h3 className="text-sm font-bold text-slate-700 mb-1">لم يتم اختيار أي مستفيد</h3>
                   <p className="text-xs text-slate-500">

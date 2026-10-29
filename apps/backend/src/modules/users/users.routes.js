@@ -16,7 +16,7 @@ const express = require('express');
 const router  = express.Router();
 
 const { authenticate, authorize } = require('../../middleware/rbac');
-const { createUserRules, updateUserRules, validateRequest } = require('./users.validators');
+const { createUserRules, updateUserRules, setPasswordRules, validateRequest } = require('./users.validators');
 const controller = require('./users.controller');
 
 // ── GET /api/users ────────────────────────────────────────────────────────────
@@ -61,6 +61,16 @@ router.patch(
   authenticate,
   authorize('gm'),
   controller.activateUser
+);
+
+// ── PATCH /api/users/:id/password ────────────────────────────────────────────
+router.patch(
+  '/:id/password',
+  authenticate,
+  authorize('gm'),
+  setPasswordRules,
+  validateRequest,
+  controller.setUserPassword
 );
 
 // ── DELETE /api/users/:id ─────────────────────────────────────────────────────

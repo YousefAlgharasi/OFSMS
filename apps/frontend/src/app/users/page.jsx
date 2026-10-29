@@ -15,10 +15,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, X, Trash2, Edit2, Users, RefreshCw, Plus, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, X, Trash2, Edit2, Users, RefreshCw, Plus, CheckCircle2, KeyRound, Eye, EyeOff } from 'lucide-react';
 import SearchField from '@/components/ui/SearchField';
 import EmptyState from '@/components/ui/EmptyState';
-import StatPill from '@/components/ui/StatPill';
 
 import { useForm } from 'react-hook-form';
 import api from '@/lib/api';
@@ -107,6 +106,104 @@ function StatusToggle({ user, currentUserId, onToggle, loading }) {
   );
 }
 
+// ── ChangePasswordSection (edit modal) ─────────────────────────────────────────
+
+function ChangePasswordSection({ user }) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const save = async () => {
+    if (password.length < 8) {
+      setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await api.patch(`/users/${user.id}/password`, { password });
+      setDone(true);
+      setPassword('');
+      setOpen(false);
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+        (err.isOffline ? err.message : 'تعذّر تغيير كلمة المرور. حاول مجدداً')
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-t border-slate-100 bg-slate-50/60 px-6 py-5" dir="rtl">
+      {done && !open && (
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-700">
+          <CheckCircle2 size={16} /> تم تغيير كلمة المرور. أبلغ المستخدم بها ليسجّل الدخول.
+        </div>
+      )}
+
+      {!open ? (
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-800 transition-colors hover:bg-amber-100"
+          onClick={() => { setOpen(true); setDone(false); setError(''); }}
+        >
+          <KeyRound size={16} strokeWidth={2.5} /> تغيير كلمة المرور
+        </button>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <label className="text-xs font-bold text-slate-700" htmlFor="newPassword">كلمة المرور الجديدة</label>
+          <div className="relative">
+            <input
+              id="newPassword"
+              type={show ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-left text-sm font-medium text-slate-800 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              placeholder="8 أحرف على الأقل"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+            />
+            <button
+              type="button"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              onClick={() => setShow((v) => !v)}
+              aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+            >
+              {show ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {error && (
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-red-600"><AlertTriangle size={14} /> {error}</p>
+          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
+              onClick={save}
+              disabled={saving}
+            >
+              {saving ? <><Spinner size="xs" variant="white" /> جارٍ الحفظ…</> : 'حفظ كلمة المرور'}
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-white disabled:opacity-60"
+              onClick={() => { setOpen(false); setPassword(''); setError(''); }}
+              disabled={saving}
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── UserFormModal ──────────────────────────────────────────────────────────────
 
 function UserFormModal({ mode, user, onClose, onSaved }) {
@@ -162,7 +259,7 @@ function UserFormModal({ mode, user, onClose, onSaved }) {
     <>
       <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
       <div 
-        className="fixed left-1/2 top-1/2 z-[1001] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl bg-white/95 shadow-2xl backdrop-blur-xl border border-white/40 animate-in slide-in-from-bottom-4 zoom-in-95" 
+        className="fixed left-1/2 top-1/2 z-[1001] max-h-[92vh] w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl bg-white/95 shadow-2xl backdrop-blur-xl border border-white/40 animate-in slide-in-from-bottom-4 zoom-in-95" 
         dir="rtl"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/80 px-6 py-5 backdrop-blur-md">
@@ -178,7 +275,7 @@ function UserFormModal({ mode, user, onClose, onSaved }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex max-h-[80vh] flex-col gap-5 overflow-y-auto p-6">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-5 p-6">
           {apiErr && (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               <AlertTriangle size={16} /> {apiErr}
@@ -277,6 +374,8 @@ function UserFormModal({ mode, user, onClose, onSaved }) {
             </button>
           </div>
         </form>
+
+        {isEdit && <ChangePasswordSection user={user} />}
       </div>
     </>
   );
@@ -473,15 +572,6 @@ export default function UserManagementPage() {
           </div>
         </div>
 
-        {/* Stat Pills */}
-        <div className="flex flex-wrap gap-3">
-          <StatPill label="الإجمالي"   count={users.length}              color="#1e293b" />
-          <StatPill label="مدير عام"   count={roleCounts.gm || 0}        color="#7e22ce" />
-          <StatPill label="مشرف أيتام" count={roleCounts.supervisor || 0} color="#1d4ed8" />
-          <StatPill label="مندوب"      count={roleCounts.agent || 0}      color="#047857" />
-          <StatPill label="قسم مالي"   count={roleCounts.finance || 0}    color="#b45309" />
-        </div>
-
         {/* Filters Bar */}
         <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200/60 bg-white/60 p-4 shadow-sm backdrop-blur-md">
           {/* Search */}
@@ -563,8 +653,54 @@ export default function UserManagementPage() {
           />
         )}
 
+        {/* Phone: one card per user, with clearly visible edit / delete buttons */}
         {!loading && filtered.length > 0 && (
-          <div className="overflow-hidden rounded-3xl border border-slate-200/60 bg-white/60 shadow-xl shadow-slate-200/30 backdrop-blur-md">
+          <div className="flex flex-col gap-3 md:hidden">
+            {filtered.map((user) => {
+              const isSelf = user.id === currentUser?.id;
+              return (
+                <div key={user.id} className={`rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm ${!user.is_active ? 'opacity-70' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-800 to-slate-600 text-sm font-bold text-white">
+                      {user.full_name?.charAt(0) || '؟'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 font-bold text-slate-900">
+                        <span className="truncate">{user.full_name}</span>
+                        {isSelf && <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-black text-blue-700">أنت</span>}
+                      </div>
+                      <div className="truncate text-left text-xs font-medium text-slate-500" dir="ltr">{user.email}</div>
+                    </div>
+                    <RoleBadge role={user.role} />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                    <span dir="ltr">{user.phone || '—'}</span>
+                    <StatusToggle user={user} currentUserId={currentUser?.id} onToggle={handleToggle} loading={toggling === user.id} />
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-sm font-bold text-blue-700 active:bg-blue-100"
+                      onClick={() => setEditTarget(user)}
+                    >
+                      <Edit2 size={16} strokeWidth={2.5} /> تعديل
+                    </button>
+                    {!isSelf && (
+                      <button
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-bold text-red-700 active:bg-red-100"
+                        onClick={() => setDelTarget(user)}
+                      >
+                        <Trash2 size={16} strokeWidth={2.5} /> حذف
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="hidden overflow-hidden rounded-3xl border border-slate-200/60 bg-white/60 shadow-xl shadow-slate-200/30 backdrop-blur-md md:block">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px] border-collapse text-right text-sm">
                 <thead>
@@ -617,7 +753,7 @@ export default function UserManagementPage() {
                           {formatDate(user.created_at)}
                         </td>
                         <td className="px-5 py-4">
-                          <div className="flex items-center justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                          <div className="flex items-center justify-center gap-2">
                             <button
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 hover:shadow-sm"
                               onClick={() => setEditTarget(user)}

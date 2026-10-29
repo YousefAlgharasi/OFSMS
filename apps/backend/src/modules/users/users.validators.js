@@ -51,6 +51,13 @@ const updateUserRules = [
     .withMessage('الدور غير صحيح'),
 ];
 
+const setPasswordRules = [
+  body('password')
+    .notEmpty().withMessage('كلمة المرور الجديدة مطلوبة')
+    .isLength({ min: 8 }).withMessage('كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+    .isLength({ max: 72 }).withMessage('كلمة المرور طويلة جداً (الحد الأقصى 72 حرفاً)'),
+];
+
 // ── Validation result handler ─────────────────────────────────────────────────
 
 /**
@@ -66,4 +73,4 @@ const validateRequest = (req, res, next) => {
   next();
 };
 
-module.exports = { createUserRules, updateUserRules, validateRequest };
+module.exports = { createUserRules, updateUserRules, setPasswordRules, validateRequest };
