@@ -23,9 +23,10 @@ const domainError = (message, statusCode) => {
 
 /**
  * Submit a monthly Quran report for an orphan.
- * Validates juz_memorized against the age-appropriate threshold.
+ * The agent writes what the orphan memorized as free text; the system does not
+ * judge it — the supervisor reads it and approves or rejects the report.
  */
-const submitReport = async ({ orphanId, agentId, role, month, year, juzMemorized }) => {
+const submitReport = async ({ orphanId, agentId, role, month, year, memorizedText, agentNotes }) => {
   // 1. Check if report already exists
   const existing = await repository.findExistingReport(orphanId, month, year);
   if (existing) throw domainError(`تقرير الحفظ لهذا اليتيم عن شهر ${month}/${year} موجود بالفعل`, 409);
@@ -39,28 +40,19 @@ const submitReport = async ({ orphanId, agentId, role, month, year, juzMemorized
     throw domainError('ليس لديك صلاحية لرفع تقرير لهذا اليتيم', 403);
   }
 
-  // 4. Calculate age in years
-  const dob = new Date(orphan.date_of_birth);
-  const reportDate = new Date(year, month - 1, 1);
-  const ageYears = Math.floor((reportDate - dob) / (365.25 * 24 * 60 * 60 * 1000));
+  // 4. Insert report (stays pending until the supervisor decides)
+  const report = await repository.upsertReport(orphanId, agentId, month, year, memorizedText, agentNotes);
 
-  // 5. Fetch threshold
-  const thresholdRow = await repository.findThresholdForAge(ageYears);
-  const threshold = thresholdRow?.min_juz_per_month ?? null;
-
-  // 6. Insert report
-  const report = await repository.upsertReport(orphanId, agentId, month, year, juzMemorized);
-
-  // 7. Audit log
+  // 5. Audit log
   await logAudit({
     userId:     agentId,
     action:     'quran_report_submitted',
     entityType: 'quran_report',
     entityId:   report.id,
-    newValue:   { orphan_id: orphanId, month, year, juz_memorized: juzMemorized },
+    newValue:   { orphan_id: orphanId, month, year, memorized_text: memorizedText },
   });
 
-  return { report, threshold, meets_threshold: threshold !== null ? juzMemorized >= threshold : null };
+  return { report };
 };
 
 /**

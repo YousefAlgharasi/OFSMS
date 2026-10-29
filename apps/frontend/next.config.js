@@ -16,6 +16,23 @@ const nextConfig = {
 
   allowedDevOrigins: ['192.168.1.130', '192.168.43.199', '*.trycloudflare.com'],
 
+  // The service worker must always be fetched fresh so updates reach the phones
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        source: '/offline.html',
+        headers: [{ key: 'Cache-Control', value: 'no-cache' }],
+      },
+    ];
+  },
+
   async rewrites() {
     return [
       {

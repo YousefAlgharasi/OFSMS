@@ -24,9 +24,14 @@ router.post(
     body('orphanId').isUUID().withMessage('معرّف اليتيم غير صحيح'),
     body('month').isInt({ min: 1, max: 12 }).withMessage('الشهر يجب أن يكون بين 1 و 12'),
     body('year').isInt({ min: 2020 }).withMessage('السنة غير صحيحة'),
-    body('juzMemorized')
-      .isFloat({ min: 0 })
-      .withMessage('عدد الأجزاء يجب أن يكون صفرًا أو أكثر'),
+    body('memorizedText')
+      .trim()
+      .notEmpty().withMessage('يرجى كتابة ما حفظه اليتيم هذا الشهر')
+      .isLength({ max: 2000 }).withMessage('نص الحفظ طويل جداً (الحد الأقصى 2000 حرف)'),
+    body('agentNotes')
+      .optional({ checkFalsy: true })
+      .trim()
+      .isLength({ max: 1000 }).withMessage('الملاحظات طويلة جداً (الحد الأقصى 1000 حرف)'),
   ],
   controller.submitReport
 );

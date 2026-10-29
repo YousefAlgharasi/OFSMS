@@ -29,15 +29,18 @@ jobs:
           SITE_URL: ${{ inputs.site_url }}
         run: |
           npm init -y >/dev/null
-          npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          # Filesystem + Share: used to save / share exported PDF and Excel files
+          npm i @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 @capacitor/filesystem@6 @capacitor/share@6
           mkdir -p www
           echo '<!doctype html><title>OFSMS</title>' > www/index.html
+          # Shown when the app is opened offline before it has ever been opened online
+          cp ../frontend/public/offline.html www/offline.html
           cat > capacitor.config.json <<JSON
           {
             "appId": "org.namaa.ofsms",
             "appName": "نظام نماء",
             "webDir": "www",
-            "server": { "url": "$SITE_URL", "cleartext": false },
+            "server": { "url": "$SITE_URL", "cleartext": false, "errorPath": "offline.html" },
             "android": { "allowMixedContent": false }
           }
           JSON

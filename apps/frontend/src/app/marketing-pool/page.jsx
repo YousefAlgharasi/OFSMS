@@ -26,6 +26,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import api from '../../lib/api';
 import AppShell from '../../components/AppShell';
 import useAuthStore from '../../store/useAuthStore';
+import { saveBlobFile } from '../../lib/saveFile';
 import Select from '@/components/ui/Select';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -176,16 +177,7 @@ export default function MarketingPoolPage() {
   };
 
   // ── PDF export ─────────────────────────────────────────────────────────────
-  const downloadBlob = (blob, filename) => {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  };
+  const downloadBlob = (blob, filename) => saveBlobFile(blob, filename);
 
   const exportSelected = async () => {
     if (selectedItems.length === 0) return;
@@ -197,7 +189,7 @@ export default function MarketingPoolPage() {
         const item = items.find((i) => i.type === type && i.id === id);
         const res = await api.get(API.PDF_REPORT(type, id), { responseType: 'blob' });
         const safeName = (item?.name || id).replace(FILENAME_UNSAFE_CHARS, '-');
-        downloadBlob(res.data, `${type}-${safeName}.pdf`);
+        await downloadBlob(res.data, `${type}-${safeName}.pdf`);
         await new Promise((resolve) => setTimeout(resolve, EXPORT_DELAY_MS));
       }
     } catch (err) {

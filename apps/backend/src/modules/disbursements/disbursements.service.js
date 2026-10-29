@@ -67,7 +67,7 @@ const generateDisbursementList = async (createdBy) => {
   for (const o of orphanRows) {
     const included = !o.quran_status || o.quran_status === 'approved';
     const reason   = o.quran_status === 'rejected'
-      ? 'لم يستوفِ حصة الحفظ الشهرية'
+      ? 'رفض المشرف تقرير الحفظ الشهري'
       : o.quran_status === 'pending'
       ? 'تقرير الحفظ قيد المراجعة'
       : null;

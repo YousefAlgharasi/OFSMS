@@ -20,7 +20,7 @@ const submitReport = async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
     
-    const { orphanId, month, year, juzMemorized } = req.body;
+    const { orphanId, month, year, memorizedText, agentNotes } = req.body;
     
     const result = await service.submitReport({
       orphanId,
@@ -28,7 +28,8 @@ const submitReport = async (req, res, next) => {
       role: req.user.role,
       month: parseInt(month),
       year: parseInt(year),
-      juzMemorized: parseFloat(juzMemorized),
+      memorizedText,
+      agentNotes,
     });
     
     return res.status(201).json({

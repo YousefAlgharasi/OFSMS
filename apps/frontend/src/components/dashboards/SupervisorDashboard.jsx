@@ -250,7 +250,7 @@ export default function SupervisorDashboard() {
                     <div className="queue-name">{r.orphan_name}</div>
                     <div className="queue-meta">
                       <span className="queue-tag" style={{ color: '#7c3aed', background: '#f5f3ff' }}>
-                        {r.juz_memorized} جزء
+                        {r.memorized_text ? 'نص الحفظ' : `${r.juz_memorized} جزء`}
                       </span>
                       <span className="queue-agent">المندوب: {r.agent_name}</span>
                     </div>

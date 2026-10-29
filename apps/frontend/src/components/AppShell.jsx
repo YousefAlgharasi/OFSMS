@@ -17,6 +17,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import useAuthStore from '../store/useAuthStore';
 import { useThemeStore } from '../store/useThemeStore';
 import api from '../lib/api';
+import { rememberLastPath } from '../lib/offlineStorage';
+import { warmOfflineCache } from '../lib/offlineWarmup';
 import NotificationBell from './NotificationBell';
 import {
   LayoutDashboard, Users, Home, Tag, Handshake, Star,
@@ -278,6 +280,20 @@ export default function AppShell({ children }) {
 
   // Close mobile drawer whenever the route changes
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
+
+  // Remember the last page so the app reopens where the user left off (also offline)
+  useEffect(() => {
+    if (user && pathname && canAccessCurrentPath) rememberLastPath(pathname);
+  }, [user, pathname, canAccessCurrentPath]);
+
+  // After login, save the role's pages on the device so they open with no connection
+  useEffect(() => {
+    if (!user?.role) return undefined;
+    const timer = setTimeout(() => {
+      warmOfflineCache(user.role, ['/', '/login', ...flatItems(NAV_ITEMS[user.role] || []).map((i) => i.href)]).catch(() => {});
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [user?.role]);
 
   useEffect(() => {
     if (!user) {

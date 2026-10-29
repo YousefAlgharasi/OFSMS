@@ -67,7 +67,8 @@ api.interceptors.response.use(
   (res) => {
     // If successful GET request, cache the response data for offline access
     const method = (res.config?.method || 'get').toLowerCase();
-    if (method === 'get' && res.data && typeof window !== 'undefined') {
+    const isFile = ['blob', 'arraybuffer'].includes(res.config?.responseType);
+    if (method === 'get' && res.data && !isFile && typeof window !== 'undefined') {
       saveOfflineData(res.config.url || '', res.config.params, res.data);
     }
     return res;
