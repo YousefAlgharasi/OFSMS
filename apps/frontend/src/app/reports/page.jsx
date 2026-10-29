@@ -17,6 +17,7 @@ import SearchField from '@/components/ui/SearchField';
 import { SkeletonRows } from '@/components/ui/Skeleton';
 
 import api from '../../lib/api';
+import { saveBlobFile } from '../../lib/saveFile';
 import AppShell from '../../components/AppShell';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -57,13 +58,7 @@ const downloadFile = async (url, filename, ext) => {
       ? 'application/pdf'
       : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-  const link    = document.createElement('a');
-  link.href     = URL.createObjectURL(blob);
-  link.download = `${filename}.${ext}`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  await saveBlobFile(blob, `${filename}.${ext}`);
 };
 
 // ── Reusable Export Action Bar ────────────────────────────────────────────────

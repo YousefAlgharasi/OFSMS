@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, X, CheckCircle2, BookOpen, AlertCircle } from 'lucide-react';
+import { AlertTriangle, X, CheckCircle2, BookOpen } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 import api from '@/lib/api';
@@ -45,13 +45,15 @@ const calcAge = (dob) => {
   return Math.floor((Date.now() - new Date(dob)) / (1000 * 60 * 60 * 24 * 365.25));
 };
 
+// What the agent reported: free text (new), or the old numeric juz (older reports)
+const reportedText = (r) =>
+  r.memorized_text || (r.juz_memorized != null ? `${r.juz_memorized} جزء` : '—');
+
 // ── Shared UI Components ───────────────────────────────────────────────────────
 
 // ── ApproveModal ───────────────────────────────────────────────────────────────
 
 function ApproveModal({ report, onConfirm, onClose }) {
-  const belowThreshold = report.threshold != null && report.juz_memorized < report.threshold;
-
   return (
     <>
       <div className="fixed inset-0 bg-black/45 z-[100] animate-[fadeIn_0.2s]" onClick={onClose} />
@@ -63,25 +65,20 @@ function ApproveModal({ report, onConfirm, onClose }) {
           </button>
         </div>
         <div className="flex flex-col gap-3 p-6">
-          {belowThreshold ? (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <AlertCircle size={22} className="text-amber-500 shrink-0" />
-              <p className="m-0 text-[0.88rem] text-amber-800 leading-relaxed">
-                حفظ اليتيم <strong>{report.orphan_name}</strong> مقدار{' '}
-                <strong>{report.juz_memorized} جزء</strong> والحد المطلوب{' '}
-                <strong>{report.threshold} جزء</strong>.
-                <br />هل تريد الاعتماد رغم أنه أقل من الحد؟
-              </p>
-            </div>
-          ) : (
-            <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-300 rounded-xl p-4">
-              <CheckCircle2 size={22} className="text-emerald-500 shrink-0" />
-              <p className="m-0 text-[0.88rem] text-emerald-800 leading-relaxed">
-                سيتم اعتماد تقرير <strong>{report.orphan_name}</strong> لشهر{' '}
-                <strong>{MONTHS_AR[report.month]} {report.year}</strong>.
-              </p>
-            </div>
-          )}
+          <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-300 rounded-xl p-4">
+            <CheckCircle2 size={22} className="text-emerald-500 shrink-0" />
+            <p className="m-0 text-[0.88rem] text-emerald-800 leading-relaxed">
+              سيتم اعتماد تقرير <strong>{report.orphan_name}</strong> لشهر{' '}
+              <strong>{MONTHS_AR[report.month]} {report.year}</strong>.
+            </p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+            <p className="m-0 mb-1 text-[0.72rem] font-bold text-gray-500">ما كتبه المندوب</p>
+            <p className="m-0 text-[0.88rem] text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{reportedText(report)}</p>
+            {report.agent_notes && (
+              <p className="m-0 mt-2 text-[0.8rem] text-gray-500 whitespace-pre-wrap break-words">ملاحظات: {report.agent_notes}</p>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-end gap-2.5 p-4 border-t border-gray-100">
           <button className="inline-flex items-center py-2 px-5 bg-transparent text-gray-500 font-semibold text-[0.85rem] border-[1.5px] border-gray-200 rounded-xl transition-colors hover:border-gray-400 hover:text-gray-700" onClick={onClose}>إلغاء</button>
@@ -146,7 +143,8 @@ function RejectModal({ report, onConfirm, onClose }) {
 function SubmitReportModal({ orphans, onClose, onSubmitted }) {
   const [saving, setSaving] = useState(false);
   const [apiErr, setApiErr] = useState('');
-  const [juz, setJuz] = useState(0.5);
+  const [memorizedText, setMemorizedText] = useState('');
+  const [agentNotes, setAgentNotes] = useState('');
 
   const now = new Date();
   const { register, handleSubmit, formState: { errors }, watch } = useForm({
@@ -161,14 +159,11 @@ function SubmitReportModal({ orphans, onClose, onSubmitted }) {
   const selectedOrphan = orphans.find(o => o.id === selectedOrphanId);
   const age = selectedOrphan ? calcAge(selectedOrphan.date_of_birth) : null;
 
-  // Suggested target based on age
-  const suggestedJuz = age == null ? null
-    : age < 7 ? 0.5
-      : age < 10 ? 1
-        : age < 13 ? 1.5
-          : 2;
-
   const onSubmit = async (data) => {
+    if (!memorizedText.trim()) {
+      setApiErr('يرجى كتابة ما حفظه اليتيم هذا الشهر');
+      return;
+    }
     setSaving(true);
     setApiErr('');
     try {
@@ -176,7 +171,8 @@ function SubmitReportModal({ orphans, onClose, onSubmitted }) {
         orphanId: data.orphanId,
         month: parseInt(data.month),
         year: parseInt(data.year),
-        juzMemorized: juz,
+        memorizedText: memorizedText.trim(),
+        agentNotes: agentNotes.trim(),
       });
       onSubmitted();
       onClose();
@@ -220,7 +216,6 @@ function SubmitReportModal({ orphans, onClose, onSubmitted }) {
             {selectedOrphan && (
               <p className="text-[0.72rem] text-gray-400 m-0 mt-1">
                 {selectedOrphan.governorate_ar} · العمر: {age} سنة
-                {suggestedJuz && ` · الحصة المقترحة: ${suggestedJuz} جزء`}
               </p>
             )}
           </div>
@@ -245,41 +240,35 @@ function SubmitReportModal({ orphans, onClose, onSubmitted }) {
             </div>
           </div>
 
-          {/* Juz memorized stepper */}
+          {/* What the orphan memorized — free text, the supervisor judges it */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[0.82rem] font-semibold text-gray-700">
-              عدد الأجزاء المحفوظة <span className="text-red-600">*</span>
+            <label className="text-[0.82rem] font-semibold text-gray-700" htmlFor="memorizedText">
+              ما حفظه اليتيم هذا الشهر <span className="text-red-600">*</span>
             </label>
-            <div className="flex items-center gap-4 bg-gray-50 border-[1.5px] border-gray-200 rounded-xl p-2.5 w-fit">
-              <button type="button" className="w-8 h-8 rounded-full border-[1.5px] border-gray-300 bg-white text-[1.1rem] font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors hover:not(:disabled):border-[#1B5E8C] hover:not(:disabled):text-[#1B5E8C] disabled:opacity-35 disabled:cursor-not-allowed"
-                onClick={() => setJuz(Math.max(0, parseFloat((juz - 0.5).toFixed(1))))}
-                disabled={juz <= 0}
-              >−</button>
-              <div className="flex flex-col items-center min-w-[60px]">
-                <span className="text-[1.8rem] font-extrabold text-[#0d3d5c] leading-none font-sans">{juz}</span>
-                <span className="text-[0.72rem] text-gray-400 font-semibold">جزء</span>
-              </div>
-              <button type="button" className="w-8 h-8 rounded-full border-[1.5px] border-gray-300 bg-white text-[1.1rem] font-bold text-gray-700 flex items-center justify-center cursor-pointer transition-colors hover:not(:disabled):border-[#1B5E8C] hover:not(:disabled):text-[#1B5E8C] disabled:opacity-35 disabled:cursor-not-allowed"
-                onClick={() => setJuz(Math.min(30, parseFloat((juz + 0.5).toFixed(1))))}
-                disabled={juz >= 30}
-              >+</button>
-            </div>
-            <div className="flex gap-1.5 flex-wrap mt-1">
-              {[0.5, 1, 1.5, 2, 3].map(v => (
-                <button
-                  key={v} type="button"
-                  className={`py-1 px-2.5 border-[1.5px] rounded-full text-[0.75rem] font-semibold font-sans cursor-pointer transition-colors ${juz === v ? 'border-[#1B5E8C] bg-[#1B5E8C] text-white' : 'border-gray-200 bg-white text-gray-500 hover:border-[#1B5E8C] hover:text-[#1B5E8C]'}`}
-                  onClick={() => setJuz(v)}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-            {suggestedJuz && juz < suggestedJuz && (
-              <p className="text-[0.75rem] text-amber-500 font-semibold m-0 mt-1 flex items-center gap-1.5">
-                <AlertTriangle size={14} /> الحصة المقترحة لهذه الفئة العمرية هي {suggestedJuz} جزء
-              </p>
-            )}
+            <Textarea
+              id="memorizedText"
+              className="rounded-xl min-h-[100px] py-2.5 px-3 text-[0.88rem]"
+              rows={4}
+              maxLength={2000}
+              placeholder="مثال: سورة النبأ كاملة، وجزء عمّ من سورة النازعات إلى سورة الانفطار"
+              value={memorizedText}
+              onChange={(e) => { setMemorizedText(e.target.value); setApiErr(''); }}
+            />
+            <p className="text-[0.75rem] text-gray-400 m-0">سيقرأ المشرف التقرير ويقرر اعتماده.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.82rem] font-semibold text-gray-700" htmlFor="agentNotes">
+              ملاحظات المندوب <span className="text-gray-400 font-medium">(اختياري)</span>
+            </label>
+            <Textarea
+              id="agentNotes"
+              className="rounded-xl min-h-[64px] py-2.5 px-3 text-[0.88rem]"
+              rows={2}
+              maxLength={1000}
+              value={agentNotes}
+              onChange={(e) => setAgentNotes(e.target.value)}
+            />
           </div>
 
           <div className="flex justify-end gap-3 border-t border-gray-100 pt-4 mt-2">
@@ -427,7 +416,7 @@ export default function QuranReportsPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b-[1.5px] border-gray-200">
-                    {['اسم اليتيم', 'المحافظة', 'الشهر / السنة', 'الأجزاء', 'الحالة', 'تاريخ الرفع'].map(h => (
+                    {['اسم اليتيم', 'المحافظة', 'الشهر / السنة', 'ما تم حفظه', 'الحالة', 'تاريخ الرفع'].map(h => (
                       <th key={h} className="py-3 px-4 text-right text-[0.72rem] font-bold text-gray-500 whitespace-nowrap tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -488,7 +477,7 @@ export default function QuranReportsPage() {
               { label: 'اسم اليتيم' },
               { label: 'المحافظة', className: 'hidden md:table-cell' },
               { label: 'الشهر / السنة' },
-              { label: 'الأجزاء المحفوظة' },
+              { label: 'ما تم حفظه' },
               { label: 'الحالة' },
               { label: 'تاريخ الرفع', className: 'hidden md:table-cell' },
               ...(role === 'supervisor' || role === 'gm' ? [{ label: 'المندوب' }, { label: 'إجراء' }] : []),
@@ -515,15 +504,15 @@ export default function QuranReportsPage() {
                       <td className="py-3.5 px-4 align-middle text-gray-500 text-[0.83rem] hidden md:table-cell">{r.governorate_ar || '—'}</td>
                       <td className="py-3.5 px-4 align-middle text-gray-500 text-[0.83rem] whitespace-nowrap">{MONTHS_AR[r.month]} {r.year}</td>
                       <td className="py-3.5 px-4 align-middle">
-                        {(() => {
-                          const meets = r.threshold != null && r.juz_memorized >= r.threshold;
-                          const colorClass = r.threshold == null ? 'text-gray-500 border-gray-200 bg-gray-50' : meets ? 'text-emerald-600 border-emerald-200 bg-emerald-50' : 'text-red-600 border-red-200 bg-red-50';
-                          return (
-                            <span className={`inline-flex items-center py-1 px-2.5 border rounded-full text-[0.8rem] font-bold font-sans ${colorClass}`}>
-                              {r.juz_memorized} / {r.threshold ?? '—'}
-                            </span>
-                          );
-                        })()}
+                        <div className="max-w-[320px]">
+                          <p className="m-0 text-[0.85rem] font-semibold text-gray-800 leading-relaxed whitespace-pre-wrap break-words">{reportedText(r)}</p>
+                          {r.agent_notes && (
+                            <p className="m-0 mt-1 text-[0.75rem] text-gray-500 whitespace-pre-wrap break-words">ملاحظات: {r.agent_notes}</p>
+                          )}
+                          {(role === 'supervisor' || role === 'gm') && r.threshold != null && (
+                            <p className="m-0 mt-1 text-[0.7rem] text-gray-400">مرجع العمر: {r.threshold} جزء/شهر</p>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 align-middle"><StatusBadge status={r.status} /></td>
                       <td className="py-3.5 px-4 align-middle text-gray-500 text-[0.83rem] hidden md:table-cell whitespace-nowrap">{formatDate(r.submitted_at)}</td>

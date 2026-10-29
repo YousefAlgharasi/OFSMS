@@ -259,7 +259,8 @@ const findPortfolioSponsorships = async (sponsorId) => {
        qr.status        AS latest_report_status,
        qr.month         AS latest_report_month,
        qr.year          AS latest_report_year,
-       qr.juz_memorized AS latest_juz_memorized
+       qr.juz_memorized AS latest_juz_memorized,
+       qr.memorized_text AS latest_memorized_text
      FROM sponsorships sp
      LEFT JOIN orphans   o  ON o.id  = sp.beneficiary_id AND sp.beneficiary_type = 'orphan'
      LEFT JOIN families  f  ON f.id  = sp.beneficiary_id AND sp.beneficiary_type = 'family'
@@ -268,7 +269,7 @@ const findPortfolioSponsorships = async (sponsorId) => {
      LEFT JOIN users uo ON uo.id = o.agent_id
      LEFT JOIN users uf ON uf.id = f.agent_id
      LEFT JOIN LATERAL (
-       SELECT status, month, year, juz_memorized
+       SELECT status, month, year, juz_memorized, memorized_text
        FROM quran_reports
        WHERE orphan_id = sp.beneficiary_id
        ORDER BY year DESC, month DESC
@@ -345,6 +346,7 @@ const findQuranReportsByOrphanId = async (orphanId) => {
        qr.month,
        qr.year,
        qr.juz_memorized,
+       qr.memorized_text,
        qr.status,
        qr.submitted_at,
        qr.supervisor_notes

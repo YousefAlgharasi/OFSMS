@@ -17,6 +17,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '../store/useAuthStore';
 import Spinner from '../components/ui/Spinner';
+import { getLastPath } from '../lib/offlineStorage';
 
 // Maps each role to its home dashboard route
 const ROLE_DASHBOARD = {
@@ -27,6 +28,10 @@ const ROLE_DASHBOARD = {
   sponsor:    '/sponsor/portal',
 };
 
+// Reopen on the page the user was last on; otherwise on the role's dashboard
+const startPage = (user) =>
+  (user.role !== 'sponsor' && getLastPath()) || ROLE_DASHBOARD[user.role] || '/dashboard';
+
 export default function HomePage() {
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -35,7 +40,7 @@ export default function HomePage() {
   useEffect(() => {
     if (accessToken && user) {
       // Fully authenticated — go to role-specific dashboard
-      const dest = ROLE_DASHBOARD[user.role] || '/dashboard';
+      const dest = startPage(user);
       router.replace(dest);
       return;
     }
@@ -48,7 +53,7 @@ export default function HomePage() {
 
     // If offline and user exists, proceed to dashboard with cached data
     if (typeof navigator !== 'undefined' && !navigator.onLine && user) {
-      const dest = ROLE_DASHBOARD[user.role] || '/dashboard';
+      const dest = startPage(user);
       router.replace(dest);
       return;
     }
@@ -56,7 +61,7 @@ export default function HomePage() {
     // Safety fallback: if 1.5s pass and still no token, proceed based on user
     const timer = setTimeout(() => {
       if (user) {
-        const dest = ROLE_DASHBOARD[user.role] || '/dashboard';
+        const dest = startPage(user);
         router.replace(dest);
       } else {
         router.replace('/landing');

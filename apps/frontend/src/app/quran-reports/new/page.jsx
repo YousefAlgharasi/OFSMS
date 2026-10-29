@@ -12,17 +12,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   AlertTriangle,
-  CheckCircle2,
-  Info,
-  Check,
   ClipboardList,
   Send,
   Search,
   X,
-  Calendar,
   BookOpen,
   ArrowRight,
-  Sparkles,
   Users
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -36,23 +31,12 @@ import PageHeader from '@/components/ui/PageHeader';
 
 const API = {
   ORPHANS: '/orphans?status=under_sponsorship',
-  QURAN_THRESHOLDS: '/quran-thresholds',
   QURAN_REPORTS: '/quran-reports',
 };
 
 const MONTHS_AR = [
   '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
-];
-
-const JUZ_PRESETS = [
-  { value: 0, label: 'صفر', sub: '٠ جزء' },
-  { value: 0.25, label: 'ربع جزء', sub: '٠٫٢٥' },
-  { value: 0.5, label: 'نصف جزء', sub: '٠٫٥' },
-  { value: 1, label: 'جزء', sub: '١ كامل' },
-  { value: 1.5, label: 'جزء ونصف', sub: '١٫٥' },
-  { value: 2, label: 'جزءان', sub: '٢ كاملان' },
-  { value: 3, label: 'ثلاثة', sub: '٣ أجزاء' },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -62,93 +46,12 @@ const calcAge = (dob) => {
   return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 };
 
-const getThresholdForAge = (age, thresholds) => {
-  if (age == null || !thresholds?.length) return null;
-  return thresholds.find((t) => age >= t.age_min && age <= t.age_max) || null;
-};
-
-// ── Shared UI Components ───────────────────────────────────────────────────────
-
-function JuzQuickPick({ value, onChange }) {
-  return (
-    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-      {JUZ_PRESETS.map(({ value: v, label, sub }) => {
-        const active = parseFloat(value) === v;
-        return (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onChange(v)}
-            className={`flex flex-col items-center justify-center gap-1 py-2 px-1.5 border-[1.5px] rounded-xl font-sans cursor-pointer transition-all ${
-              active
-                ? 'border-[#1B5E8C] bg-[#1B5E8C] text-white shadow-[0_2px_8px_rgba(27,94,140,0.25)]'
-                : 'border-gray-200 bg-white hover:border-[#1B5E8C] hover:bg-blue-50/40 text-gray-800'
-            }`}
-          >
-            <span className={`text-xs font-bold leading-tight ${active ? 'text-white' : 'text-gray-800'}`}>
-              {label}
-            </span>
-            <span className={`text-[10px] font-medium leading-none ltr ${active ? 'text-white/80' : 'text-gray-400'}`}>
-              {sub}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ThresholdHint({ threshold, juzValue }) {
-  if (!threshold) return null;
-  const juz = parseFloat(juzValue) || 0;
-  const meets = juz >= threshold.min_juz_per_month;
-
-  const statusClass = meets
-    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-    : juz === 0
-      ? 'bg-blue-50 border-blue-200 text-[#1B5E8C]'
-      : 'bg-amber-50 border-amber-200 text-amber-800';
-
-  return (
-    <div className={`flex items-start gap-2.5 py-3 px-4 rounded-xl text-xs leading-relaxed border ${statusClass}`}>
-      <span className="shrink-0 mt-0.5">
-        {meets ? (
-          <CheckCircle2 size={16} className="text-emerald-600" />
-        ) : juz === 0 ? (
-          <Info size={16} className="text-[#1B5E8C]" />
-        ) : (
-          <AlertTriangle size={16} className="text-amber-500" />
-        )}
-      </span>
-      <div>
-        <span className="font-bold ml-1">{threshold.label}</span>
-        <span>
-          {` · الحد الأدنى: `}
-          <strong>{threshold.min_juz_per_month} جزء/شهر</strong>
-          {juz > 0 && (
-            meets ? (
-              <span className="text-emerald-700 font-bold mr-1">
-                — يستوفي الشرط <Check size={14} className="inline-block align-text-bottom" />
-              </span>
-            ) : (
-              <span className="text-amber-700 font-bold mr-1">
-                — لا يستوفي الشرط (قد يُوقف الصرف)
-              </span>
-            )
-          )}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function QuranReportSubmissionPage() {
   const router = useRouter();
 
   const [orphans, setOrphans] = useState([]);
-  const [thresholds, setThresholds] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -166,12 +69,12 @@ export default function QuranReportSubmissionPage() {
 
   const [month, setMonth] = useState(defaultMonth);
   const [year, setYear] = useState(defaultYear);
-  const [juzMemorized, setJuzMemorized] = useState('');
+  const [memorizedText, setMemorizedText] = useState('');
+  const [agentNotes, setAgentNotes] = useState('');
 
   const yearOptions = [defaultYear - 1, defaultYear, defaultYear + 1];
 
   const orphanAge = selectedOrphan ? calcAge(selectedOrphan.date_of_birth) : null;
-  const threshold = getThresholdForAge(orphanAge, thresholds);
 
   useEffect(() => {
     fetchInitialData();
@@ -180,16 +83,11 @@ export default function QuranReportSubmissionPage() {
   const fetchInitialData = async () => {
     try {
       setDataLoading(true);
-      const [orphanRes, thresholdRes] = await Promise.all([
-        api.get(API.ORPHANS),
-        api.get(API.QURAN_THRESHOLDS),
-      ]);
+      const orphanRes = await api.get(API.ORPHANS);
       setOrphans(orphanRes.data.orphans || []);
-      setThresholds(thresholdRes.data.thresholds || []);
     } catch (err) {
-      console.error('Failed to load orphans/thresholds:', err);
+      console.error('Failed to load orphans:', err);
       setOrphans([]);
-      setThresholds([]);
     } finally {
       setDataLoading(false);
     }
@@ -212,7 +110,8 @@ export default function QuranReportSubmissionPage() {
     setSelectedOrphan(orphan);
     setMonth(defaultMonth);
     setYear(defaultYear);
-    setJuzMemorized('');
+    setMemorizedText('');
+    setAgentNotes('');
     setApiError('');
     setReportModalOpen(true);
   };
@@ -230,14 +129,8 @@ export default function QuranReportSubmissionPage() {
     e.preventDefault();
     if (!selectedOrphan) return;
 
-    if (juzMemorized === '' || isNaN(parseFloat(juzMemorized))) {
-      setApiError('يرجى تحديد أو إدخال مقدار الحفظ');
-      return;
-    }
-
-    const juzNum = parseFloat(juzMemorized);
-    if (juzNum < 0 || juzNum > 30) {
-      setApiError('مقدار الحفظ يجب أن يكون بين 0 و 30 جزءاً');
+    if (!memorizedText.trim()) {
+      setApiError('يرجى كتابة ما حفظه اليتيم هذا الشهر');
       return;
     }
 
@@ -249,17 +142,15 @@ export default function QuranReportSubmissionPage() {
         orphanId: selectedOrphan.id,
         month: parseInt(month, 10),
         year: parseInt(year, 10),
-        juzMemorized: juzNum,
+        memorizedText: memorizedText.trim(),
+        agentNotes: agentNotes.trim(),
       });
-
-      const meets = threshold ? juzNum >= threshold.min_juz_per_month : null;
 
       setSubmittedSuccess({
         orphanName: selectedOrphan.full_name,
         month: parseInt(month, 10),
         year: parseInt(year, 10),
-        juz: juzNum,
-        meetsThreshold: meets,
+        memorizedText: memorizedText.trim(),
       });
 
       setReportModalOpen(false);
@@ -284,13 +175,7 @@ export default function QuranReportSubmissionPage() {
         >
           <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-slate-100 flex flex-col items-center gap-4 animate-in zoom-in-95">
             <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#1B5E8C] flex items-center justify-center">
-              {submittedSuccess.meetsThreshold === true ? (
-                <CheckCircle2 size={40} className="text-emerald-500" />
-              ) : submittedSuccess.meetsThreshold === false ? (
-                <AlertTriangle size={40} className="text-amber-500" />
-              ) : (
-                <ClipboardList size={40} className="text-[#1B5E8C]" />
-              )}
+              <ClipboardList size={40} className="text-[#1B5E8C]" />
             </div>
 
             <h2 className="text-xl font-black text-slate-900 m-0">تم رفع التقرير بنجاح</h2>
@@ -299,15 +184,12 @@ export default function QuranReportSubmissionPage() {
               تم رفع تقرير حفظ القرآن لـ <strong className="text-slate-900">{submittedSuccess.orphanName}</strong>
               {' '}عن شهر{' '}
               <strong className="text-[#1B5E8C]">{MONTHS_AR[submittedSuccess.month]} {submittedSuccess.year}</strong>
-              {' '}بمقدار <strong className="text-slate-900">{submittedSuccess.juz} جزء</strong>.
+              .
             </p>
 
-            {submittedSuccess.meetsThreshold === false && (
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl py-3 px-4 text-xs text-amber-800 text-right w-full">
-                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                <span>مقدار الحفظ أقل من الحد الأدنى المطلوب. قد يقرر المشرف تعليق الصرف هذا الشهر.</span>
-              </div>
-            )}
+            <p className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 w-full text-right whitespace-pre-wrap break-words m-0">
+              {submittedSuccess.memorizedText}
+            </p>
 
             <p className="text-xs text-slate-500 m-0 flex items-center justify-center gap-1.5">
               <Send size={14} className="text-[#1B5E8C]" />
@@ -459,88 +341,53 @@ export default function QuranReportSubmissionPage() {
                 </div>
               </div>
 
-              {/* ── Section 3: مقدار الحفظ ── */}
+                            {/* ── Section 3: ما تم حفظه ── */}
               <div className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center gap-3 pb-2 border-b border-slate-200/60">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1B5E8C] to-[#134569] text-white flex items-center justify-center text-sm font-bold shrink-0">
                     ٣
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">مقدار الحفظ</h4>
-                    <p className="text-[11px] text-slate-500">أدخل عدد الأجزاء المحفوظة هذا الشهر (يمكن كسر)</p>
+                    <h4 className="text-sm font-bold text-slate-900">ما حفظه اليتيم</h4>
+                    <p className="text-[11px] text-slate-500">اكتب ما حفظه اليتيم هذا الشهر — سيقرأ المشرف التقرير ويقرر اعتماده</p>
                   </div>
                 </div>
 
-                {/* Threshold hint for orphan's age */}
-                <ThresholdHint
-                  threshold={threshold}
-                  juzValue={juzMemorized}
-                />
-
-                {/* Quick presets */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    اختر سريعاً أو أدخل يدوياً
+                  <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="modalMemorizedText">
+                    ما تم حفظه هذا الشهر <span className="text-rose-500">*</span>
                   </label>
-                  <JuzQuickPick
-                    value={juzMemorized}
-                    onChange={(v) => {
-                      setJuzMemorized(v);
+                  <textarea
+                    id="modalMemorizedText"
+                    name="memorizedText"
+                    rows={4}
+                    maxLength={2000}
+                    value={memorizedText}
+                    onChange={(e) => {
+                      setMemorizedText(e.target.value);
                       setApiError('');
                     }}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-sans focus:outline-none focus:border-[#1B5E8C] focus:ring-2 focus:ring-[#1B5E8C]/20 transition resize-y"
+                    placeholder="مثال: سورة النبأ كاملة، وجزء عمّ من سورة النازعات إلى سورة الانفطار"
+                    required
                   />
                 </div>
 
-                {/* Manual input */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="modalJuzInput">
-                    عدد الأجزاء <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="modalAgentNotes">
+                    ملاحظات المندوب <span className="text-slate-400 font-medium">(اختياري)</span>
                   </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      id="modalJuzInput"
-                      type="number"
-                      min="0"
-                      max="30"
-                      step="0.25"
-                      value={juzMemorized}
-                      onChange={(e) => {
-                        setJuzMemorized(e.target.value);
-                        setApiError('');
-                      }}
-                      className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-base font-black text-slate-800 text-center font-sans focus:outline-none focus:border-[#1B5E8C] focus:ring-2 focus:ring-[#1B5E8C]/20 transition"
-                      placeholder="مثال: 1 أو 0.5"
-                      required
-                    />
-                    <span className="text-xs font-bold text-slate-500 bg-white px-3 py-2.5 rounded-xl border border-slate-200 whitespace-nowrap">
-                      جزء / شهر
-                    </span>
-                  </div>
+                  <textarea
+                    id="modalAgentNotes"
+                    name="agentNotes"
+                    rows={2}
+                    maxLength={1000}
+                    value={agentNotes}
+                    onChange={(e) => setAgentNotes(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-sans focus:outline-none focus:border-[#1B5E8C] focus:ring-2 focus:ring-[#1B5E8C]/20 transition resize-y"
+                    placeholder="أي ملاحظة تساعد المشرف على المراجعة"
+                  />
                 </div>
-
-                {/* Progress bar towards minimum requirement */}
-                {threshold && juzMemorized !== '' && parseFloat(juzMemorized) >= 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>٠ جزء</span>
-                      <span className="text-[#1B5E8C] font-bold">
-                        الحد الأدنى: {threshold.min_juz_per_month} جزء
-                      </span>
-                    </div>
-                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          parseFloat(juzMemorized) >= threshold.min_juz_per_month
-                            ? 'bg-emerald-500'
-                            : 'bg-amber-500'
-                        }`}
-                        style={{
-                          width: `${Math.min((parseFloat(juzMemorized) / threshold.min_juz_per_month) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Error feedback */}

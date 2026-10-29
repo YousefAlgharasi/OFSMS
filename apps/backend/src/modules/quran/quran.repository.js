@@ -43,17 +43,19 @@ const findThresholdForAge = async (ageYears) => {
 };
 
 // ── Insert or update a Quran report ───────────────────────────────────────────
-const upsertReport = async (orphanId, agentId, month, year, juzMemorized) => {
+const upsertReport = async (orphanId, agentId, month, year, memorizedText, agentNotes) => {
   const { rows } = await query(
     `INSERT INTO quran_reports
-       (orphan_id, agent_id, month, year, juz_memorized, status)
-     VALUES ($1, $2, $3, $4, $5, 'pending')
+       (orphan_id, agent_id, month, year, memorized_text, agent_notes, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'pending')
      ON CONFLICT (orphan_id, month, year)
-     DO UPDATE SET juz_memorized = EXCLUDED.juz_memorized,
+     DO UPDATE SET memorized_text = EXCLUDED.memorized_text,
+                   agent_notes = EXCLUDED.agent_notes,
+                   juz_memorized = NULL,
                    status = 'pending',
                    submitted_at = NOW()
      RETURNING *`,
-    [orphanId, agentId, month, year, juzMemorized]
+    [orphanId, agentId, month, year, memorizedText, agentNotes || null]
   );
   return rows[0];
 };
@@ -62,7 +64,8 @@ const upsertReport = async (orphanId, agentId, month, year, juzMemorized) => {
 const findPendingReports = async () => {
   const { rows } = await query(
     `SELECT
-       qr.id, qr.month, qr.year, qr.juz_memorized, qr.status, qr.submitted_at,
+       qr.id, qr.month, qr.year, qr.juz_memorized, qr.memorized_text, qr.agent_notes,
+       qr.status, qr.submitted_at,
        o.full_name AS orphan_name, o.date_of_birth,
        g.name_ar  AS governorate_ar,
        u.full_name AS agent_name,
@@ -84,7 +87,7 @@ const findPendingReports = async () => {
 const findReportsByAgent = async (agentId) => {
   const { rows } = await query(
     `SELECT
-       qr.id, qr.month, qr.year, qr.juz_memorized,
+       qr.id, qr.month, qr.year, qr.juz_memorized, qr.memorized_text, qr.agent_notes,
        qr.status, qr.submitted_at, qr.supervisor_notes,
        o.full_name AS orphan_name
      FROM quran_reports qr

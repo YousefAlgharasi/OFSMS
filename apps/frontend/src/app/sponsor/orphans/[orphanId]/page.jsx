@@ -177,8 +177,12 @@ function QuranReportsTab({ reports }) {
             </div>
 
             <div className="mb-4">
-              <span className="block text-3xl font-black text-slate-800 mb-1">{r.juz_memorized} <span className="text-sm text-slate-400 font-bold">أجزاء</span></span>
-              <span className="text-xs font-semibold text-slate-500">معدل الإنجاز والمراجعة المعتمد</span>
+              {r.memorized_text ? (
+                <span className="block text-base font-bold text-slate-800 mb-1 leading-relaxed whitespace-pre-wrap break-words">{r.memorized_text}</span>
+              ) : (
+                <span className="block text-3xl font-black text-slate-800 mb-1">{r.juz_memorized} <span className="text-sm text-slate-400 font-bold">أجزاء</span></span>
+              )}
+              <span className="text-xs font-semibold text-slate-500">ما تم حفظه — بعد مراجعة المشرف</span>
             </div>
 
             {r.supervisor_notes && r.status === 'rejected' && (

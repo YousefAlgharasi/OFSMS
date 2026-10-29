@@ -16,6 +16,7 @@
  */
 
 import { create } from 'zustand';
+import { clearOfflineCache } from '../lib/offlineStorage';
 
 // ── Safely read user from localStorage (handles SSR) ─────────────────────────
 const readUserFromSession = () => {
@@ -55,6 +56,8 @@ const useAuthStore = create((set, get) => ({
   // Called on logout or unrecoverable 401
   clearAuth: () => {
     writeUserToSession(null);
+    // The saved offline data belongs to the user who just left this device
+    clearOfflineCache();
     set({ accessToken: null, user: null });
   },
 

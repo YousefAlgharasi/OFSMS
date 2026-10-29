@@ -215,8 +215,8 @@ function OrphanDetailModal({ orphanId, orphanName, token, onClose }) {
                               <span className="text-sm font-black text-slate-700 leading-none">{r.month}</span>
                             </div>
                             <div>
-                              <span className="block text-sm font-bold text-slate-800">حفظ {r.juz_memorized} أجزاء</span>
-                              <span className="block text-xs font-semibold text-slate-400 mt-0.5">معدل الإنجاز الشهري</span>
+                              <span className="block text-sm font-bold text-slate-800 whitespace-pre-wrap break-words">{r.memorized_text ? `حفظ: ${r.memorized_text}` : `حفظ ${r.juz_memorized} أجزاء`}</span>
+                              <span className="block text-xs font-semibold text-slate-400 mt-0.5">تقرير الحفظ الشهري</span>
                             </div>
                           </div>
                           <span className={`text-[0.65rem] font-bold px-2.5 py-1 rounded-lg border ${cfg.bg} ${cfg.color} ${cfg.border}`}>

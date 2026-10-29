@@ -166,7 +166,7 @@ const getSupervisorPendingFamilies = async () => {
 const getSupervisorPendingQuranReports = async () => {
   const { rows } = await query(`
     SELECT qr.id, o.full_name AS orphan_name,
-           qr.month, qr.year, qr.juz_memorized, qr.submitted_at, u.full_name AS agent_name
+           qr.month, qr.year, qr.juz_memorized, qr.memorized_text, qr.submitted_at, u.full_name AS agent_name
     FROM quran_reports qr
     JOIN orphans o ON o.id = qr.orphan_id
     JOIN users u ON u.id = qr.agent_id

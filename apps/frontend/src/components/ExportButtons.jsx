@@ -21,6 +21,7 @@
 
 import { useState } from 'react';
 import api from '../lib/api';
+import { saveBlobFile } from '../lib/saveFile';
 import { Download, FileText, FileSpreadsheet, AlertTriangle, X } from 'lucide-react';
 
 export default function ExportButtons({
@@ -46,15 +47,13 @@ export default function ExportButtons({
           ? 'application/pdf'
           : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
-      const link    = document.createElement('a');
-      link.href     = URL.createObjectURL(blob);
-      link.download = `${filename}.${ext}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-    } catch {
-      setError(`فشل تصدير ${ext === 'pdf' ? 'PDF' : 'Excel'} — حاول مجدداً`);
+      await saveBlobFile(blob, `${filename}.${ext}`);
+    } catch (err) {
+      setError(err?.isOffline || !navigator.onLine
+        ? 'التصدير يحتاج اتصالاً بالإنترنت'
+        : err?.message?.includes('نسخة أحدث')
+          ? err.message
+          : `فشل تصدير ${ext === 'pdf' ? 'PDF' : 'Excel'} — حاول مجدداً`);
     } finally {
       setLoading(false);
     }
