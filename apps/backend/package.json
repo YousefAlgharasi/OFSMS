@@ -8,7 +8,7 @@
     "start:prod": "npm run predeploy && node src/index.js",
     "seed": "node scripts/seed.js",
     "create-admin": "node scripts/create-admin.js",
-    "predeploy": "node src/db/migrate.js && node scripts/create-admin.js --if-configured",
+    "predeploy": "node src/db/migrate.js && node scripts/reset-data.js && node scripts/create-admin.js --if-configured",
     "migrate": "node src/db/migrate.js",
     "test": "jest"
   },
