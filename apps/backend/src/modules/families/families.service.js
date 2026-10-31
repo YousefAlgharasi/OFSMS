@@ -91,7 +91,6 @@ const getFamilyById = async (id, userRole, userId) => {
     err.statusCode = 404;
     throw err;
   }
-  require('../../utils/statusTransitions').assertTransition(oldStatus, status);
 
   if (userRole === 'agent' && family.agent_id !== userId) {
     const err = new Error('ليس لديك صلاحية للوصول إلى هذا المورد');
