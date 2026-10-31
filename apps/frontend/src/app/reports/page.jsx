@@ -351,7 +351,7 @@ function DisbursementsTab() {
                       </span>
                     </td>
                     <td className="py-3 px-4 border-b border-[#f0f4f8] text-gray-500 text-[0.82rem]">
-                      {parseInt(list.total_items || 0)} مستفيد
+                      {parseInt(list.included_count ?? list.total_items ?? 0)} مستفيد
                     </td>
                     <td className="py-3 px-4 border-b border-[#f0f4f8] font-bold text-primary text-[0.82rem]">
                       {parseFloat(list.total_amount || 0).toLocaleString('ar-YE')} ر.ي

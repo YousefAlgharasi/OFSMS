@@ -132,6 +132,20 @@ const createOrphan = async (req, res, next) => {
       ...(b.recommendations      && { recommendations: b.recommendations }),
     };
 
+    // Required documents must be present BEFORE anything is saved
+    for (const [field, label] of [['deathCert', 'شهادة الوفاة'], ['birthCert', 'شهادة الميلاد']]) {
+      if (!req.files?.[field]?.[0]) {
+        return res.status(422).json({ errors: [{ msg: `${label} مطلوبة`, field }] });
+      }
+    }
+
+    // Same child registered twice (same name + birth date)
+    if (await service.findDuplicate(fullName, dateOfBirth)) {
+      return res.status(409).json({
+        error: 'يوجد يتيم مسجّل بنفس الاسم وتاريخ الميلاد مسبقاً. تحقق من القائمة قبل التسجيل مرة أخرى.',
+      });
+    }
+
     // 4. Create orphan record
     const orphan = await service.createOrphan({
       fullName, dateOfBirth, gender,

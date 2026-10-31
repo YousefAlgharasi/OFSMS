@@ -20,6 +20,8 @@ import PageHeader from '@/components/ui/PageHeader';
 
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import ProfileDetails from '../../components/ProfileDetails';
+import { openDocument } from '../../lib/openDocument';
 import AppShell from '@/components/AppShell';
 import Button from '@/components/ui/Button';
 import StatusBadge, { STATUS_MAP } from '@/components/ui/StatusBadge';
@@ -79,6 +81,7 @@ export default function MyOrphansPage() {
   const [search,    setSearch]    = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [docs,      setDocs]      = useState([]);
+  const [profile,   setProfile]   = useState(null);
   const [docsLoading, setDL]      = useState(true);
 
   // Fetch orphan documents when selection changes
@@ -86,8 +89,8 @@ export default function MyOrphansPage() {
     if (!selected) return;
     setDL(true);
     api.get(`/orphans/${selected.id}`)
-      .then(({ data }) => setDocs(data.documents || []))
-      .catch(() => setDocs([]))
+      .then(({ data }) => { setDocs(data.documents || []); setProfile(data.orphan?.profile || null); })
+      .catch(() => { setDocs([]); setProfile(null); })
       .finally(() => setDL(false));
   }, [selected?.id]);
 
@@ -463,6 +466,13 @@ export default function MyOrphansPage() {
               </div>
             )}
 
+            {profile && Object.keys(profile).length > 0 && (
+              <div className="info-section">
+                <h3 className="text-[0.78rem] font-bold text-slate-400 uppercase tracking-[0.06em] mb-3">بيانات دراسة الحالة</h3>
+                <ProfileDetails profile={profile} />
+              </div>
+            )}
+
             {/* Documents */}
             <div className="info-section">
               <h3 className="text-[0.78rem] font-bold text-slate-400 uppercase tracking-[0.06em] mb-3">المستندات المرفوعة</h3>
@@ -473,11 +483,11 @@ export default function MyOrphansPage() {
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {docs.map((d) => (
-                    <div key={d.id} className="flex items-center gap-2 px-2.5 py-2 bg-slate-50 border border-[#e5eaf0] rounded-[0.5rem] text-[0.78rem]">
+                    <button type="button" key={d.id} onClick={() => openDocument(d)} className="flex w-full items-center gap-2 px-2.5 py-2 bg-slate-50 border border-[#e5eaf0] rounded-[0.5rem] text-[0.78rem] cursor-pointer hover:bg-slate-100 text-start">
                       <span><FileText size={16} /></span>
                       <span className="flex-1 text-gray-700 font-medium overflow-hidden text-ellipsis whitespace-nowrap [direction:ltr] text-left">{d.original_name || d.doc_type}</span>
                       <span className="text-slate-400 flex-shrink-0">{formatDate(d.uploaded_at)}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

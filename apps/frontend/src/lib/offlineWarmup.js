@@ -40,12 +40,12 @@ const DATA_BY_ROLE = {
     '/quran-reports/mine', '/disbursements/agent/released',
   ],
   supervisor: [
-    '/dashboard/supervisor', '/orphans', '/families', '/orphans/marketing', '/families/marketing',
-    '/supervisor/queue', '/quran-reports/pending', '/quran-thresholds', '/disbursements', '/disbursements/history',
+    '/dashboard/supervisor', '/orphans', '/families',
+    '/supervisor/queue', '/quran-reports/pending?status=all', '/quran-thresholds', '/disbursements', '/disbursements/history',
   ],
   gm: [
     '/dashboard/gm', '/orphans', '/families', '/orphans/marketing', '/families/marketing', '/orphans/gifted',
-    '/sponsors', '/users', '/supervisor/queue', '/quran-reports/pending', '/quran-thresholds',
+    '/sponsors', '/users', '/supervisor/queue', '/quran-reports/pending?status=all', '/quran-thresholds',
     '/disbursements', '/disbursements/history', '/ads', '/settings', '/landing',
   ],
   finance: ['/dashboard/finance', '/disbursements', '/disbursements/history'],

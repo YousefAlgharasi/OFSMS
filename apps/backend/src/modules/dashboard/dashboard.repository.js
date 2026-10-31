@@ -54,7 +54,7 @@ const getGmPendingCounts = async () => {
     SELECT
       (SELECT COUNT(*) FROM orphans WHERE status = 'under_review')                     AS registrations,
       (SELECT COUNT(*) FROM quran_reports WHERE status = 'pending')                     AS quran_reports,
-      (SELECT COUNT(*) FROM disbursement_lists WHERE status IN ('draft','supervisor_approved')) AS disbursements
+      (SELECT COUNT(*) FROM disbursement_lists WHERE status IN ('draft','supervisor_approved','finance_approved')) AS disbursements
   `);
   return row;
 };
@@ -214,9 +214,9 @@ const getFinanceRecentHistory = async () => {
 const getFinanceMonthlySummary = async () => {
   const { rows: [row] } = await query(`
     SELECT
-      COALESCE(SUM(di.amount), 0)                                                        AS current_month_total,
-      COALESCE(SUM(di.amount) FILTER (WHERE dl.status = 'released'), 0)                 AS released_this_month,
-      COALESCE(SUM(di.amount) FILTER (WHERE dl.status != 'released'), 0)                AS pending_this_month,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE), 0)                      AS current_month_total,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE AND dl.status = 'released'), 0)  AS released_this_month,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE AND dl.status != 'released'), 0) AS pending_this_month,
       COUNT(di.id) FILTER (WHERE di.included = TRUE)                                     AS current_month_count
     FROM disbursement_items di
     JOIN disbursement_lists dl ON dl.id = di.list_id

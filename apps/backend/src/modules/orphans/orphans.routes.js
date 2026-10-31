@@ -48,6 +48,7 @@ const createOrphanRules = [
   body('fullName')
     .trim()
     .notEmpty().withMessage('الاسم الكامل مطلوب')
+    .isLength({ max: 150 }).withMessage('الاسم الكامل طويل جداً (الحد الأقصى 150 حرفاً)')
     .custom((val) => {
       const parts = val.trim().split(/\s+/).filter(Boolean);
       if (parts.length < 2) {
@@ -80,7 +81,10 @@ const createOrphanRules = [
 
   body('guardianName')
     .notEmpty().withMessage('اسم الوصي مطلوب')
-    .trim(),
+    .trim()
+    .isLength({ max: 150 }).withMessage('اسم الوصي طويل جداً (الحد الأقصى 150 حرفاً)'),
+
+  body('notes').optional({ nullable: true }).isLength({ max: 3000 }).withMessage('الملاحظات طويلة جداً'),
 
   body('guardianRelation')
     .notEmpty().withMessage('صلة الوصي مطلوبة')

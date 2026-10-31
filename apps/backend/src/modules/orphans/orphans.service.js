@@ -13,6 +13,17 @@ const { sendPushNotification } = require('../notifications/notifications.service
  * Create a new orphan record.
  * Initial status is always 'under_review'.
  */
+const findDuplicate = async (fullName, dateOfBirth) => {
+  const { rows } = await query(
+    `SELECT id FROM orphans
+     WHERE regexp_replace(lower(full_name), '\\s+', ' ', 'g') = regexp_replace(lower($1), '\\s+', ' ', 'g')
+       AND date_of_birth = $2
+     LIMIT 1`,
+    [fullName, dateOfBirth]
+  );
+  return rows[0] || null;
+};
+
 const createOrphan = async ({
   fullName,
   dateOfBirth,
@@ -266,6 +277,7 @@ const deleteOrphan = async (id) => {
 };
 
 module.exports = {
+  findDuplicate,
   createOrphan,
   getOrphans,
   getOrphanById,

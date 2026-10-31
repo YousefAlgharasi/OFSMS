@@ -302,7 +302,7 @@ export default function QuranReportsPage() {
   const fetchReports = useCallback(() => {
     setLoading(true);
     // Agents see their own reports; supervisor/GM review the pending queue
-    api.get(role === 'agent' ? API.MINE : API.PENDING)
+    api.get(role === 'agent' ? API.MINE : `${API.PENDING}?status=all`)
       .then(({ data }) => setReports(data.reports || []))
       .catch(() => setError('تعذّر تحميل البيانات'))
       .finally(() => setLoading(false));

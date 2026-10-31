@@ -16,7 +16,7 @@ const { query } = require('../../config/db');
 // ── Check if a report already exists for the orphan/month/year ────────────────
 const findExistingReport = async (orphanId, month, year) => {
   const { rows } = await query(
-    'SELECT id FROM quran_reports WHERE orphan_id = $1 AND month = $2 AND year = $3',
+    'SELECT id, status FROM quran_reports WHERE orphan_id = $1 AND month = $2 AND year = $3',
     [orphanId, month, year]
   );
   return rows[0] || null;
@@ -52,6 +52,8 @@ const upsertReport = async (orphanId, agentId, month, year, memorizedText, agent
      DO UPDATE SET memorized_text = EXCLUDED.memorized_text,
                    agent_notes = EXCLUDED.agent_notes,
                    juz_memorized = NULL,
+                   supervisor_notes = NULL,
+                   agent_id = EXCLUDED.agent_id,
                    status = 'pending',
                    submitted_at = NOW()
      RETURNING *`,
@@ -61,11 +63,12 @@ const upsertReport = async (orphanId, agentId, month, year, memorizedText, agent
 };
 
 // ── Fetch all pending reports (Supervisor Queue) ──────────────────────────────
-const findPendingReports = async () => {
+const findPendingReports = async (status = 'pending') => {
+  const filter = ['pending', 'approved', 'rejected'].includes(status) ? status : null; // anything else = all
   const { rows } = await query(
     `SELECT
        qr.id, qr.month, qr.year, qr.juz_memorized, qr.memorized_text, qr.agent_notes,
-       qr.status, qr.submitted_at,
+       qr.status, qr.submitted_at, qr.supervisor_notes,
        o.full_name AS orphan_name, o.date_of_birth,
        g.name_ar  AS governorate_ar,
        u.full_name AS agent_name,
@@ -77,8 +80,10 @@ const findPendingReports = async () => {
      LEFT JOIN quran_thresholds qt
        ON qt.age_min <= DATE_PART('year', AGE(o.date_of_birth))
       AND qt.age_max >= DATE_PART('year', AGE(o.date_of_birth))
-     WHERE qr.status = 'pending'
-     ORDER BY qr.submitted_at ASC`
+     WHERE ($1::text IS NULL OR qr.status::text = $1)
+     ORDER BY (qr.status = 'pending') DESC, qr.submitted_at ASC
+     LIMIT 500`,
+    [filter]
   );
   return rows;
 };

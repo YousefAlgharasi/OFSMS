@@ -14,6 +14,8 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Handshake, Search, AlertTriangle, CheckCircle2, Share2 } from 'lucide-react';
 import api from '../../../lib/api';
+import ProfileDetails from '../../../components/ProfileDetails';
+import { openDocument } from '../../../lib/openDocument';
 import AppShell from '../../../components/AppShell';
 import useAuthStore from '../../../store/useAuthStore';
 import TransferSponsorModal from '../../../components/TransferSponsorModal';
@@ -390,17 +392,22 @@ export default function OrphanDetailPage() {
                   )}
                 </Section>
 
+                {orphan.profile && Object.keys(orphan.profile).length > 0 && (
+                  <Section title="بيانات دراسة الحالة">
+                    <ProfileDetails profile={orphan.profile} />
+                  </Section>
+                )}
+
                 {/* Documents */}
                 {documents.length > 0 && (
                   <Section title="المستندات المرفقة">
                     <div className="flex flex-col gap-1.5">
                       {documents.map((doc) => (
-                        <a
+                        <button
+                          type="button"
                           key={doc.id}
-                          href={`/api/documents/${doc.id}/download`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-3 p-2.5 px-3.5 border border-gray-200 rounded-xl no-underline transition-all duration-150 bg-[#fafafa] hover:border-[#1B5E8C] hover:bg-[#f0f7ff]"
+                          onClick={() => openDocument(doc)}
+                          className="w-full text-start cursor-pointer flex items-center gap-3 p-2.5 px-3.5 border border-gray-200 rounded-xl no-underline transition-all duration-150 bg-[#fafafa] hover:border-[#1B5E8C] hover:bg-[#f0f7ff]"
                         >
                           <span className="text-gray-500 flex shrink-0"><IconDoc /></span>
                           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -414,7 +421,7 @@ export default function OrphanDetailPage() {
                             </span>
                           </div>
                           <span className="text-xs text-gray-400 shrink-0">{formatDate(doc.uploaded_at)}</span>
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </Section>

@@ -40,9 +40,9 @@ const submitReport = async (req, res, next) => {
 };
 
 // ── GET /api/quran-reports/pending (Supervisor Queue) ─────────────────────────
-const getPendingReports = async (_req, res, next) => {
+const getPendingReports = async (req, res, next) => {
   try {
-    const reports = await service.getPendingReports();
+    const reports = await service.getPendingReports(req.query.status);
     return res.json({ reports, total: reports.length });
   } catch (err) { handleError(err, res, next); }
 };
@@ -60,6 +60,9 @@ const getReportById = async (req, res, next) => {
   try {
     const report = await service.getReportById(req.params.id);
     if (!report) return res.status(404).json({ error: 'التقرير غير موجود' });
+    if (req.user.role === 'agent' && report.agent_id !== req.user.id) {
+      return res.status(403).json({ error: 'غير مصرح لك بعرض هذا التقرير' });
+    }
     return res.json({ report });
   } catch (err) { handleError(err, res, next); }
 };

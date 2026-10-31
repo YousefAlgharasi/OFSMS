@@ -348,10 +348,9 @@ const findQuranReportsByOrphanId = async (orphanId) => {
        qr.juz_memorized,
        qr.memorized_text,
        qr.status,
-       qr.submitted_at,
-       qr.supervisor_notes
+       qr.submitted_at
      FROM quran_reports qr
-     WHERE qr.orphan_id = $1
+     WHERE qr.orphan_id = $1 AND qr.status = 'approved'
      ORDER BY qr.year DESC, qr.month DESC`,
     [orphanId]
   );

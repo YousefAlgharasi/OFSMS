@@ -39,6 +39,12 @@ const createFamily = async (
   { familyName, headOfFamily, memberCount, governorateId, agentId, notes },
   files = {}
 ) => {
+  const tooLong = (v, n) => typeof v === 'string' && v.length > n;
+  if (tooLong(familyName, 150) || tooLong(headOfFamily, 150) || tooLong(notes, 3000)) {
+    const e = new Error('أحد الحقول أطول من الحد المسموح');
+    e.status = 400;
+    throw e;
+  }
   const family = await repository.createFamily({
     familyName,
     headOfFamily,

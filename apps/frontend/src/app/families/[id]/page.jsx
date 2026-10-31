@@ -14,6 +14,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Handshake, Search, AlertTriangle, CheckCircle2, Check, X, Plus, Share2 } from 'lucide-react';
 import api from '../../../lib/api';
+import { openDocument } from '../../../lib/openDocument';
 import AppShell from '../../../components/AppShell';
 import EmptyState from '@/components/ui/EmptyState';
 import useAuthStore from '../../../store/useAuthStore';
@@ -516,12 +517,11 @@ export default function FamilyDetailPage() {
                   <Section title="المستندات المرفقة">
                     <div className="flex flex-col gap-1.5">
                       {documents.map((doc) => (
-                        <a
+                        <button
+                          type="button"
                           key={doc.id}
-                          href={`/api/documents/${doc.id}/download`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-3 py-2.5 px-3.5 border border-gray-200 rounded-[0.625rem] no-underline transition-all bg-gray-50 hover:border-[#1B5E8C] hover:bg-blue-50"
+                          onClick={() => openDocument(doc)}
+                          className="w-full text-start cursor-pointer flex items-center gap-3 py-2.5 px-3.5 border border-gray-200 rounded-[0.625rem] no-underline transition-all bg-gray-50 hover:border-[#1B5E8C] hover:bg-blue-50"
                         >
                           <span className="text-gray-500 flex shrink-0"><IconDoc /></span>
                           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -537,7 +537,7 @@ export default function FamilyDetailPage() {
                             </span>
                           </div>
                           <span className="text-[0.72rem] text-gray-400 shrink-0">{formatDate(doc.uploaded_at)}</span>
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </Section>
