@@ -16,7 +16,7 @@ const router = Router();
 router.get('/', controller.getContent);
 
 // Admin routes to manage landing page
-router.put('/', authenticate, authorize('gm', 'supervisor'), controller.updateContent);
-router.patch('/:section', authenticate, authorize('gm', 'supervisor'), controller.updateSection);
+router.put('/', authenticate, authorize('gm'), controller.updateContent);
+router.patch('/:section', authenticate, authorize('gm'), controller.updateSection);
 
 module.exports = router;
