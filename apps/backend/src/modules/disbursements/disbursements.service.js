@@ -52,7 +52,13 @@ const generateDisbursementList = async (createdBy) => {
 
   // Guard: only one list per month
   const existing = await repository.findListByMonthYear(month, year);
-  if (existing) throw domainError('كشف الصرف لهذا الشهر موجود بالفعل', 409);
+  if (existing) {
+    // A draft or rejected list can be rebuilt (e.g. after Quran reports were approved or the list was rejected)
+    if (!['draft', 'rejected'].includes(existing.status)) {
+      throw domainError('كشف الصرف لهذا الشهر موجود بالفعل', 409);
+    }
+    await repository.deleteListById(existing.id);
+  }
 
   // Create list header
   const list = await repository.insertList(month, year, createdBy);

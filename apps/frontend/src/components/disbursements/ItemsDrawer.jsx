@@ -182,7 +182,7 @@ export default function ItemsDrawer({ listId, listInfo, role, onClose, onAction 
               <strong className="block text-amber-800 mb-1">لا يوجد إجراء متاح لك</strong>
               <p className="text-amber-700 m-0 flex items-center gap-1.5 flex-wrap">
                 الحالة الحالية: <StatusBadge status={status} />
-                {' '}· دورك: <strong>{role}</strong>
+                {' '}· دورك: <strong>{({ gm: 'المدير العام', supervisor: 'مشرف', finance: 'القسم المالي', agent: 'مندوب' })[role] || role}</strong>
               </p>
             </div>
           </div>

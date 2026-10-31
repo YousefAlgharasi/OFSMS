@@ -116,7 +116,7 @@ function RejectModal({ report, onConfirm, onClose }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[0.82rem] font-semibold text-gray-700">
-              سبب الرفض <span className="text-gray-400 font-normal text-[0.78rem]">(اختياري)</span>
+              سبب الرفض <span className="text-red-500 font-normal text-[0.78rem]">(مطلوب)</span>
             </label>
             <Textarea
               className="rounded-xl min-h-[80px] py-2.5 px-2.5 text-[0.85rem] focus:border-red-500 focus:ring-red-500/10"
