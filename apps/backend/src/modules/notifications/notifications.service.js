@@ -98,7 +98,7 @@ const sendPushNotification = async (
     };
 
     try {
-      if (!messaging) return;
+      if (!messaging) throw new Error('FCM not configured');
       const response = await messaging.sendEachForMulticast(message);
 
       // Clean up invalid/unregistered tokens
@@ -120,7 +120,7 @@ const sendPushNotification = async (
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('[FCM] sendEachForMulticast error:', err.message);
+      if (messaging) console.error('[FCM] sendEachForMulticast error:', err.message);
       failed = tokens.length;
     }
   }

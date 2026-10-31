@@ -58,12 +58,14 @@ app.get('/health', (_req, res) => {
 });
 
 // ── Local static files (dev storage fallback) ────────────────────────────────
-app.use('/local-files', express.static(process.env.UPLOADS_DIR || path.resolve(__dirname, '../uploads')));
+// Files are served only through the authenticated /api/documents routes in production
+if (process.env.NODE_ENV !== 'production') app.use('/local-files', express.static(process.env.UPLOADS_DIR || path.resolve(__dirname, '../uploads')));
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',         require('./modules/auth/auth.routes'));
 app.use('/api/orphans',      require('./modules/orphans/orphans.routes'));
 app.use('/api/families',     require('./modules/families/families.routes'));
+app.use('/api/documents',    require('./modules/documents/documents.routes'));
 app.use('/api/sponsors',     require('./modules/sponsors/sponsors.routes'));
 app.use('/api/sponsor',      require('./modules/sponsor-portal/sponsorPortal.routes'));
 app.use('/api/governorates', require('./modules/governorates/governorates.routes'));
@@ -90,8 +92,17 @@ app.use('/api/settings',         require('./modules/settings/settings.routes'));
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({
-    error: err.message || 'خطأ داخلي في الخادم',
+  // Database errors get a clear Arabic message instead of the raw SQL text
+  if (err.code === '23505') return res.status(409).json({ error: 'هذه القيمة مسجّلة مسبقاً' });
+  if (err.code === '22001') return res.status(400).json({ error: 'أحد الحقول أطول من الحد المسموح' });
+  if (err.code === '22P02' || err.code === '23502' || err.code === '23514' || err.code === '23503') {
+    return res.status(400).json({ error: 'بيانات غير صالحة' });
+  }
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    error: status === 500 && process.env.NODE_ENV === 'production'
+      ? 'خطأ داخلي في الخادم'
+      : err.message || 'خطأ داخلي في الخادم',
   });
 });
 

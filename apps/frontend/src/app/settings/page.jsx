@@ -81,7 +81,7 @@ export default function SystemSettingsPage() {
 
   // ── Tab 3: Sponsor Messages State ──────────────────────────────────────────
   const [sponsorMessages, setSponsorMessages] = useState({
-    portal_url: 'http://localhost:3000/sponsor/login',
+    portal_url: typeof window !== 'undefined' ? `${window.location.origin}/sponsor/login` : '',
     template: DEFAULT_SPONSOR_TEMPLATE,
   });
 
@@ -195,6 +195,11 @@ export default function SystemSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!/^image\/(png|jpe?g|webp|svg\+xml|gif)$/.test(file.type)) {
+      showToast('الشعار يجب أن يكون صورة (PNG أو JPG أو WEBP أو SVG)', 'error');
+      e.target.value = '';
+      return;
+    }
     if (file.size > 500 * 1024) {
       showToast('حجم الشعار يجب ألا يتجاوز 500 كيلوبايت', 'error');
       return;

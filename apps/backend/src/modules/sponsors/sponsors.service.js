@@ -80,6 +80,30 @@ const getSponsorshipsBySponsorId = async (sponsorId) => {
  * Create a new sponsorship.
  * Runs inside a transaction to keep the sponsorship insert and status update atomic.
  */
+// A beneficiary can only be sponsored from the marketing pool; a transfer needs an active sponsorship
+// with a different sponsor.
+const assertBeneficiaryState = async (type, id, sponsorId, requiredStatus) => {
+  const fail = (msg, status = 400) => { const e = new Error(msg); e.status = status; throw e; };
+  if (!['orphan', 'family'].includes(type)) fail('نوع المستفيد غير صحيح');
+  const table = type === 'orphan' ? 'orphans' : 'families';
+  const { rows: [b] } = await query(`SELECT status FROM ${table} WHERE id = $1`, [id]);
+  if (!b) fail('المستفيد غير موجود', 404);
+  const { rows: [sp] } = await query('SELECT id FROM sponsors WHERE id = $1', [sponsorId]);
+  if (!sp) fail('الكافل غير موجود', 404);
+  if (b.status !== requiredStatus) {
+    fail(requiredStatus === 'under_marketing'
+      ? 'لا يمكن كفالة هذا المستفيد إلا بعد اعتماده ووجوده تحت التسويق (قد يكون مكفولاً بالفعل)'
+      : 'لا يمكن نقل كفالة مستفيد غير مكفول');
+  }
+  const { rows: [cur] } = await query(
+    `SELECT sponsor_id FROM sponsorships WHERE beneficiary_id = $1 AND beneficiary_type = $2 AND is_active = TRUE LIMIT 1`,
+    [id, type]
+  );
+  if (requiredStatus === 'under_sponsorship' && cur && cur.sponsor_id === sponsorId) {
+    fail('المستفيد مكفول بالفعل لدى هذا الكافل');
+  }
+};
+
 const createSponsorship = async ({
   sponsorId,
   beneficiaryType,
@@ -89,10 +113,10 @@ const createSponsorship = async ({
   startDate,
   monthlyAmount,
 }) => {
-  await query('BEGIN');
+  await assertBeneficiaryState(beneficiaryType, beneficiaryId, sponsorId, 'under_marketing');
 
   try {
-    // 1. Deactivate any existing active sponsorship for this beneficiary
+    // 1. Deactivate any existing active sponsorship (none expected: checked above)
     await repo.deactivateActiveSponsorships(beneficiaryType, beneficiaryId, 'reassigned');
 
     // 2. Insert the new sponsorship
@@ -110,10 +134,8 @@ const createSponsorship = async ({
     const table = beneficiaryType === 'orphan' ? 'orphans' : 'families';
     await repo.updateBeneficiaryStatus(table, beneficiaryId, 'under_sponsorship');
 
-    await query('COMMIT');
     return sponsorship;
   } catch (err) {
-    await query('ROLLBACK');
     throw err;
   }
 };
@@ -131,7 +153,7 @@ const transferSponsorship = async ({
   endReason,
   actorId,
 }) => {
-  await query('BEGIN');
+  await assertBeneficiaryState(beneficiaryType, beneficiaryId, newSponsorId, 'under_sponsorship');
 
   try {
     // 1. Close existing active sponsorship
@@ -147,8 +169,6 @@ const transferSponsorship = async ({
       monthlyAmount,
     });
 
-    await query('COMMIT');
-
     // 3. Audit log with real actor
     await logAudit({
       userId: actorId || null,
@@ -161,7 +181,6 @@ const transferSponsorship = async ({
 
     return sponsorship;
   } catch (err) {
-    await query('ROLLBACK');
     throw err;
   }
 };

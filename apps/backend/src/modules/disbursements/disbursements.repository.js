@@ -112,7 +112,7 @@ const findFamilyItemsByListId = async (listId) => {
 // ── Check if a list already exists for a given month/year ────────────────────
 const findListByMonthYear = async (month, year) => {
   const { rows } = await query(
-    'SELECT id FROM disbursement_lists WHERE month = $1 AND year = $2',
+    'SELECT id, status FROM disbursement_lists WHERE month = $1 AND year = $2',
     [month, year]
   );
   return rows[0] || null;
@@ -213,7 +213,11 @@ const findReleasedListsByAgent = async (agentId) => {
   return rows;
 };
 
+// Remove a list that was never released (items cascade)
+const deleteListById = (id) => query('DELETE FROM disbursement_lists WHERE id = $1', [id]);
+
 module.exports = {
+  deleteListById,
   findAllLists,
   findListById,
   findOrphanItemsByListId,

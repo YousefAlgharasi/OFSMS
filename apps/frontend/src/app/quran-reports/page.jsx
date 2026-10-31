@@ -116,7 +116,7 @@ function RejectModal({ report, onConfirm, onClose }) {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[0.82rem] font-semibold text-gray-700">
-              سبب الرفض <span className="text-gray-400 font-normal text-[0.78rem]">(اختياري)</span>
+              سبب الرفض <span className="text-red-500 font-normal text-[0.78rem]">(مطلوب)</span>
             </label>
             <Textarea
               className="rounded-xl min-h-[80px] py-2.5 px-2.5 text-[0.85rem] focus:border-red-500 focus:ring-red-500/10"
@@ -302,7 +302,7 @@ export default function QuranReportsPage() {
   const fetchReports = useCallback(() => {
     setLoading(true);
     // Agents see their own reports; supervisor/GM review the pending queue
-    api.get(role === 'agent' ? API.MINE : API.PENDING)
+    api.get(role === 'agent' ? API.MINE : `${API.PENDING}?status=all`)
       .then(({ data }) => setReports(data.reports || []))
       .catch(() => setError('تعذّر تحميل البيانات'))
       .finally(() => setLoading(false));

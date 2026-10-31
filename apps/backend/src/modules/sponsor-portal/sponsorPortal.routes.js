@@ -81,6 +81,16 @@ router.get('/announcements', authenticateSponsor, async (_req, res, next) => {
   }
 });
 
+// ── GET /api/sponsor/families ─ the sponsor's active sponsored families
+router.get('/families', authenticateSponsor, async (req, res, next) => {
+  try {
+    const families = await repo.findActiveFamiliesBySponsorId(req.sponsor.id);
+    return res.json({ families, total: families.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /api/sponsor/orphans ──────────────────────────────────────────────────
 // Returns the sponsor's active sponsored orphans — selected fields only (FR-034, FR-037)
 router.get('/orphans', authenticateSponsor, async (req, res, next) => {

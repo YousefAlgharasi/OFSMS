@@ -25,7 +25,7 @@ router.post('/', authenticate, authorize('gm', 'supervisor', 'agent'), controlle
 // Update evaluation (GM, Supervisor, Agent)
 router.put('/:id', authenticate, authorize('gm', 'supervisor', 'agent'), controller.update);
 
-// Delete evaluation (GM, Supervisor)
-router.delete('/:id', authenticate, authorize('gm', 'supervisor'), controller.remove);
+// Delete evaluation (GM only)
+router.delete('/:id', authenticate, authorize('gm'), controller.remove);
 
 module.exports = router;

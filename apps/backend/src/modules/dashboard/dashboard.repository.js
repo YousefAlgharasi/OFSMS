@@ -15,7 +15,9 @@ const { query } = require('../../config/db');
 
 const getGmTotals = async () => {
   const { rows: [row] } = await query(`
-    SELECT COUNT(*) AS total_orphans FROM orphans WHERE status != 'inactive'
+    SELECT COUNT(*) AS total_orphans,
+           COUNT(*) FILTER (WHERE status = 'under_sponsorship') AS sponsored_orphans
+    FROM orphans WHERE status != 'inactive'
   `);
   return row;
 };
@@ -34,7 +36,7 @@ const getOrphansPerSponsor = async () => {
   const { rows } = await query(`
     SELECT s.id AS sponsor_id, s.full_name AS sponsor_name, COUNT(sp.id) AS count
     FROM sponsorships sp JOIN sponsors s ON s.id = sp.sponsor_id
-    WHERE sp.is_active = TRUE
+    WHERE sp.is_active = TRUE AND sp.beneficiary_type = 'orphan'
     GROUP BY s.id, s.full_name ORDER BY count DESC LIMIT 10
   `);
   return rows;
@@ -52,9 +54,9 @@ const getLatestOrphans = async () => {
 const getGmPendingCounts = async () => {
   const { rows: [row] } = await query(`
     SELECT
-      (SELECT COUNT(*) FROM orphans WHERE status = 'under_review')                     AS registrations,
+      ((SELECT COUNT(*) FROM orphans WHERE status = 'under_review') + (SELECT COUNT(*) FROM families WHERE status = 'under_review')) AS registrations,
       (SELECT COUNT(*) FROM quran_reports WHERE status = 'pending')                     AS quran_reports,
-      (SELECT COUNT(*) FROM disbursement_lists WHERE status IN ('draft','supervisor_approved')) AS disbursements
+      (SELECT COUNT(*) FROM disbursement_lists WHERE status IN ('draft','supervisor_approved','finance_approved')) AS disbursements
   `);
   return row;
 };
@@ -214,9 +216,9 @@ const getFinanceRecentHistory = async () => {
 const getFinanceMonthlySummary = async () => {
   const { rows: [row] } = await query(`
     SELECT
-      COALESCE(SUM(di.amount), 0)                                                        AS current_month_total,
-      COALESCE(SUM(di.amount) FILTER (WHERE dl.status = 'released'), 0)                 AS released_this_month,
-      COALESCE(SUM(di.amount) FILTER (WHERE dl.status != 'released'), 0)                AS pending_this_month,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE), 0)                      AS current_month_total,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE AND dl.status = 'released'), 0)  AS released_this_month,
+      COALESCE(SUM(di.amount) FILTER (WHERE di.included = TRUE AND dl.status != 'released'), 0) AS pending_this_month,
       COUNT(di.id) FILTER (WHERE di.included = TRUE)                                     AS current_month_count
     FROM disbursement_items di
     JOIN disbursement_lists dl ON dl.id = di.list_id

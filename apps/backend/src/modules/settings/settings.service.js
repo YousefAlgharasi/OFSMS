@@ -14,6 +14,12 @@ async function getAllSettings() {
   for (const row of rows) {
     settings[row.key] = row.value;
   }
+  // A localhost sponsor-portal link is never valid for sponsors: use the real site address
+  const site = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+  const sm = settings.sponsor_messages;
+  if (site && sm && /localhost|127\.0\.0\.1/.test(sm.portal_url || '')) {
+    settings.sponsor_messages = { ...sm, portal_url: `${site}/sponsor/login` };
+  }
   return settings;
 }
 
@@ -24,6 +30,16 @@ async function updateSettings(settingsMap, userId = null) {
   const results = {};
   for (const [key, val] of Object.entries(settingsMap)) {
     if (!val || typeof val !== 'object') continue;
+    if (key === 'identity' && val.logo_url) {
+      const logo = String(val.logo_url);
+      const ok = /^data:image\/(png|jpe?g|webp|svg\+xml|gif);base64,[A-Za-z0-9+/=]+$/.test(logo) ||
+        /^(\/[A-Za-z0-9._\/-]+|https?:\/\/\S+)$/.test(logo);
+      if (!ok || logo.length > 800000) {
+        const e = new Error('الشعار يجب أن يكون صورة (PNG أو JPG أو WEBP أو SVG)');
+        e.status = 400;
+        throw e;
+      }
+    }
 
     const { rows } = await query(
       `INSERT INTO system_settings (key, value, updated_at)

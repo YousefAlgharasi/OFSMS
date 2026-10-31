@@ -29,11 +29,18 @@ const getAdById = async (id) => {
 
 // ── Get ads visible to a specific sponsor ────────────────────────────────────
 const getAdsForSponsor = async (sponsorId) => {
-  return repository.findAdsForSponsor(sponsorId);
+  // Sponsors only see requests that are still open (not yet sponsored)
+  const ads = await repository.findAdsForSponsor(sponsorId);
+  return ads.filter((a) => !a.is_sponsored);
 };
 
 // ── Create a new ad ───────────────────────────────────────────────────────────
 const createAd = async (payload) => {
+  if (await repository.findOpenAdForBeneficiary(payload.beneficiaryType, payload.beneficiaryId)) {
+    const e = new Error('تمت مشاركة هذا المستفيد مسبقاً في الإعلانات');
+    e.status = 409;
+    throw e;
+  }
   return repository.insertAd(payload);
 };
 

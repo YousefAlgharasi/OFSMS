@@ -169,6 +169,7 @@ const NAV_ITEMS = {
       group: 'القرآن الكريم',
       items: [
         { label: 'رفع تقرير الحفظ', href: '/quran-reports/new', icon: BookOpen },
+        { label: 'تقاريري وحالتها', href: '/quran-reports', icon: ClipboardList },
       ],
     },
     {
@@ -242,6 +243,7 @@ const ROLE_EXTRA_PATHS = {
 // (e.g. the supervisor's "view full file" link from the registrations queue)
 const ROLE_EXTRA_PATTERNS = {
   supervisor: [/^\/(orphans|families)\/(?!new$|gifted$)[^/]+$/],
+  agent: [/^\/(orphans|families)\/[^/]+\/edit$/],
 };
 
 // Every page a role can open from the menu (+ extras): saved on the device after login

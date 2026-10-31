@@ -43,7 +43,7 @@ export default function AdsPage() {
       setError('ليس لديك صلاحية لحذف الإعلان');
       return;
     }
-    
+    if (!window.confirm('هل أنت متأكد من حذف هذا الإعلان؟ لا يمكن التراجع عن ذلك.')) return;
     setDeletingId(ad.id);
     setError('');
     try {

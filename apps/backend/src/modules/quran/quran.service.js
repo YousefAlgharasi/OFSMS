@@ -29,7 +29,8 @@ const domainError = (message, statusCode) => {
 const submitReport = async ({ orphanId, agentId, role, month, year, memorizedText, agentNotes }) => {
   // 1. Check if report already exists
   const existing = await repository.findExistingReport(orphanId, month, year);
-  if (existing) throw domainError(`تقرير الحفظ لهذا اليتيم عن شهر ${month}/${year} موجود بالفعل`, 409);
+  // A rejected report can be corrected and sent again; anything else is a duplicate
+  if (existing && existing.status !== 'rejected') throw domainError(`تقرير الحفظ لهذا اليتيم عن شهر ${month}/${year} موجود بالفعل`, 409);
 
   // 2. Fetch orphan details
   const orphan = await repository.findOrphanById(orphanId);
@@ -58,8 +59,8 @@ const submitReport = async ({ orphanId, agentId, role, month, year, memorizedTex
 /**
  * Get all pending reports — supervisor queue.
  */
-const getPendingReports = async () => {
-  return repository.findPendingReports();
+const getPendingReports = async (status) => {
+  return repository.findPendingReports(status);
 };
 
 /**

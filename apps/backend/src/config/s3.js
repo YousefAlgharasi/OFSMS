@@ -7,6 +7,7 @@
  */
 
 const AWS  = require('aws-sdk');
+const { query } = require('./db');
 const path = require('path');
 const fs   = require('fs');
 const { v4: uuidv4 } = require('uuid');
@@ -37,6 +38,16 @@ const isLocalDev = () =>
   process.env.AWS_ACCESS_KEY_ID === 'test' ||
   process.env.STORAGE_DRIVER === 'local' ||
   !process.env.AWS_ACCESS_KEY_ID;
+
+// Production without a bucket: keep files in the database so they survive deploys
+const useDbStorage = () => isLocalDev() && process.env.NODE_ENV === 'production' && process.env.STORAGE_DRIVER !== 'local';
+
+const saveDbFile = (key, buffer, mimetype) =>
+  query(
+    `INSERT INTO stored_files (file_key, content_type, content) VALUES ($1, $2, $3)
+     ON CONFLICT (file_key) DO UPDATE SET content = $3, content_type = $2`,
+    [key, mimetype || null, buffer]
+  );
 
 const saveLocalFile = async (key, buffer) => {
   const filePath = path.join(UPLOADS_DIR, key);
@@ -69,6 +80,10 @@ const uploadFile = async ({ buffer, originalName, mimetype, folder = 'documents'
   const key = `${folder}/${uuidv4()}${ext}`;
 
   // ── Local dev: save locally, return local URL ─────────────────────────────
+  if (useDbStorage()) {
+    await saveDbFile(key, buffer, mimetype);
+    return { key, url: `/api/documents/file/${key}` };
+  }
   if (isLocalDev()) {
     console.log(`[Storage LOCAL] Saving file locally: ${key}`);
     await saveLocalFile(key, buffer);
@@ -128,6 +143,10 @@ const getSignedUrl = async (key, expires = 3600) => {
  * @returns {Promise<void>}
  */
 const deleteFile = async (key) => {
+  if (useDbStorage()) {
+    await query('DELETE FROM stored_files WHERE file_key = $1', [key]);
+    return;
+  }
   if (isLocalDev()) {
     await deleteLocalFile(key);
     return;
@@ -144,4 +163,20 @@ const deleteFile = async (key) => {
   }
 };
 
-module.exports = { uploadFile, getSignedUrl, deleteFile };
+// ── readFile: returns { buffer, contentType } or null ────────────────────────
+const readFile = async (key) => {
+  const { rows } = await query('SELECT content, content_type FROM stored_files WHERE file_key = $1', [key]);
+  if (rows[0]) return { buffer: rows[0].content, contentType: rows[0].content_type };
+  if (isLocalDev()) {
+    try {
+      const buffer = await fs.promises.readFile(path.join(UPLOADS_DIR, key));
+      return { buffer, contentType: null };
+    } catch { return null; }
+  }
+  try {
+    const obj = await s3.getObject({ Bucket: BUCKET, Key: key }).promise();
+    return { buffer: obj.Body, contentType: obj.ContentType };
+  } catch { return null; }
+};
+
+module.exports = { uploadFile, getSignedUrl, deleteFile, readFile };

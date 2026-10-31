@@ -81,8 +81,13 @@ const findAdsForSponsor = async (sponsorId) => {
 };
 
 // ── Insert a new ad (with optional targeted recipients, in a transaction) ─────
+// An open ad for the same beneficiary
+const findOpenAdForBeneficiary = async (type, id) => {
+  const { rows } = await query('SELECT id FROM ads WHERE beneficiary_type = $1 AND beneficiary_id = $2 LIMIT 1', [type, id]);
+  return rows[0] || null;
+};
+
 const insertAd = async ({ beneficiaryType, beneficiaryId, createdBy, targetAll = true, sponsorIds = [] }) => {
-  await query('BEGIN');
   try {
     const { rows } = await query(
       `INSERT INTO ads (beneficiary_type, beneficiary_id, created_by, target_all)
@@ -103,10 +108,8 @@ const insertAd = async ({ beneficiaryType, beneficiaryId, createdBy, targetAll =
       }
     }
 
-    await query('COMMIT');
     return ad;
   } catch (err) {
-    await query('ROLLBACK');
     throw err;
   }
 };
@@ -125,5 +128,6 @@ module.exports = {
   findAdById,
   findAdsForSponsor,
   insertAd,
+  findOpenAdForBeneficiary,
   removeAd,
 };

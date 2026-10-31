@@ -48,7 +48,7 @@ router.post(
 router.get(
   '/history',
   authenticate,
-  authorize('supervisor', 'finance', 'gm', 'agent'),
+  authorize('supervisor', 'finance', 'gm'),
   controller.getDisbursementHistory
 );
 
@@ -57,7 +57,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  authorize('supervisor', 'finance', 'gm', 'agent'),
+  authorize('supervisor', 'finance', 'gm'),
   controller.getDisbursementById
 );
 

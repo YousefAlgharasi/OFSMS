@@ -14,6 +14,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import DataTable from '@/components/ui/DataTable';
 import PageHeader from '@/components/ui/PageHeader';
 
+const ROLE_AR = { gm: 'المدير العام', supervisor: 'مشرف', finance: 'القسم المالي', agent: 'مندوب' };
+
 export default function DisbursementsPage() {
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
@@ -35,6 +37,12 @@ export default function DisbursementsPage() {
   useEffect(() => { fetchLists(); }, []);
 
   const handleGenerate = async () => {
+    const now = new Date();
+    const thisMonth = lists.find((l) => Number(l.month) === now.getMonth() + 1 && Number(l.year) === now.getFullYear());
+    if (thisMonth && ['draft', 'rejected'].includes(thisMonth.status)
+      && !window.confirm('يوجد كشف لهذا الشهر لم يُعتمد بعد. سيتم إعادة إنشائه ببيانات اليوم (تقارير الحفظ والكفالات). هل تريد المتابعة؟')) {
+      return;
+    }
     setGenerating(true);
     setError('');
     try {
@@ -73,7 +81,7 @@ export default function DisbursementsPage() {
         {/* Header */}
         <PageHeader
           title="كشوف الصرف الشهري"
-          subtitle={loading ? 'جارٍ التحميل…' : `${lists.length} كشف · دورك: ${role}`}
+          subtitle={loading ? 'جارٍ التحميل…' : `${lists.length} كشف · دورك: ${ROLE_AR[role] || role}`}
           action={(role === 'supervisor' || role === 'gm') && (
             <button
               className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-br from-primary to-primary-dark text-white text-[0.9rem] font-bold rounded-xl border-none cursor-pointer shadow-[0_2px_8px_rgba(27,94,140,0.25)] hover:from-primary-light hover:to-primary hover:-translate-y-px disabled:opacity-65 disabled:cursor-not-allowed transition-all"

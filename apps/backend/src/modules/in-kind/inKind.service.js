@@ -175,6 +175,11 @@ const createProgram = async ({
   notes = null,
   userId = null,
 }) => {
+  if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+    const e = new Error('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+    e.status = 400;
+    throw e;
+  }
   const { rows } = await query(`
     INSERT INTO in_kind_programs
       (title, type_id, sponsor_id, status, start_date, end_date, target_quantity, notes, created_by)

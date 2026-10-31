@@ -5,6 +5,11 @@
 
 const bcrypt = require('bcryptjs');
 const service = require('./sponsors.service');
+const { logAudit } = require('../../utils/auditLog');
+
+// Audit entries must never break the request
+const audit = (req, action, entityId, newValue) =>
+  logAudit({ userId: req.user.id, action, entityType: 'sponsor', entityId, newValue }).catch(() => {});
 
 /**
  * POST /api/sponsors
@@ -25,6 +30,7 @@ const createSponsor = async (req, res, next) => {
       createdBy: req.user.id,
     });
 
+    await audit(req, 'sponsor_created', sponsor.id, { full_name: fullName });
     return res.status(201).json({
       message: 'تم إنشاء الكافل بنجاح',
       sponsor,
@@ -41,9 +47,13 @@ const createSponsor = async (req, res, next) => {
  * GET /api/sponsors
  * GM only — list all sponsors with active sponsorship count.
  */
-const getAllSponsors = async (_req, res, next) => {
+const getAllSponsors = async (req, res, next) => {
   try {
-    const sponsors = await service.getAllSponsors();
+    let sponsors = await service.getAllSponsors();
+    // Portal credentials are for the GM only
+    if (req.user?.role !== 'gm') {
+      sponsors = sponsors.map(({ portal_password_plain, portal_token, ...rest }) => rest);
+    }
     return res.json({ sponsors });
   } catch (err) {
     next(err);
@@ -115,6 +125,7 @@ const transferSponsorship = async (req, res, next) => {
       actorId: req.user.id,
     });
 
+    await audit(req, 'sponsorship_transferred', newSponsorId, { beneficiaryType, beneficiaryId });
     return res.status(200).json({
       message: 'تم نقل الكفالة بنجاح',
       sponsorship,
@@ -145,6 +156,7 @@ const updateSponsor = async (req, res, next) => {
       portalPasswordPlain: portalPassword,
     });
 
+    await audit(req, portalPassword ? 'sponsor_updated_password_changed' : 'sponsor_updated', req.params.id, { full_name: fullName });
     return res.status(200).json({
       message: 'تم تحديث بيانات الكافل بنجاح',
       sponsor,
@@ -164,6 +176,7 @@ const updateSponsor = async (req, res, next) => {
 const deleteSponsor = async (req, res, next) => {
   try {
     await service.deleteSponsor(req.params.id);
+    await audit(req, 'sponsor_deleted', req.params.id, null);
     return res.status(200).json({ message: 'تم حذف الكافل بنجاح' });
   } catch (err) {
     if (err.status === 400 || err.status === 404) {
