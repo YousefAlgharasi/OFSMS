@@ -145,7 +145,7 @@ export default function ShareAdModal({
         <div className="modal-foot">
           <button className="ghost" onClick={onClose} disabled={saving}>إلغاء</button>
           <button className="primary" onClick={submit} disabled={saving || loading}>
-            {saving ? 'جارٍ المشاركة…' : 'Share'}
+            {saving ? 'جارٍ المشاركة…' : 'مشاركة مع الكفلاء'}
           </button>
         </div>
       </div>

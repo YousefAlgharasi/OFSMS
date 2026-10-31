@@ -296,6 +296,20 @@ const findSponsorByIdForMe = async (id) => {
 /**
  * Find active orphans for a sponsor portal view.
  */
+const findActiveFamiliesBySponsorId = async (sponsorId) => {
+  const { rows } = await query(
+    `SELECT f.id, f.family_name, f.member_count, f.status,
+            g.name_ar AS governorate_ar, sp.monthly_amount, sp.start_date AS sponsorship_start
+     FROM sponsorships sp
+     JOIN families f      ON f.id = sp.beneficiary_id
+     JOIN governorates g  ON g.id = f.governorate_id
+     WHERE sp.sponsor_id = $1 AND sp.beneficiary_type = 'family' AND sp.is_active = TRUE
+     ORDER BY sp.start_date DESC`,
+    [sponsorId]
+  );
+  return rows;
+};
+
 const findActiveOrphansBySponsorId = async (sponsorId) => {
   const { rows } = await query(
     `SELECT
@@ -398,6 +412,7 @@ module.exports = {
   findPortfolioSponsorships,
   findSponsorByIdForMe,
   findActiveOrphansBySponsorId,
+  findActiveFamiliesBySponsorId,
   checkSponsorshipOwnership,
   findQuranReportsByOrphanId,
   findDisbursementsByOrphanId,

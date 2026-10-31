@@ -61,6 +61,23 @@ const create = async (req, res, next) => {
     if (!Array.isArray(criteriaScores) || criteriaScores.length === 0) {
       return res.status(400).json({ error: 'يرجى إدخال درجات معايير التقييم' });
     }
+    const bad = criteriaScores.some((c) => {
+      const n = Number(c && c.score);
+      return !Number.isFinite(n) || n < 0 || n > 5;
+    });
+    if (bad) return res.status(400).json({ error: 'درجة كل معيار يجب أن تكون بين 0 و 5' });
+
+    if (!['orphan', 'family'].includes(beneficiaryType)) {
+      return res.status(400).json({ error: 'نوع المستفيد غير صحيح' });
+    }
+    if (req.user.role === 'agent') {
+      const { query } = require('../../config/db');
+      const table = beneficiaryType === 'orphan' ? 'orphans' : 'families';
+      const { rows } = await query(`SELECT agent_id FROM ${table} WHERE id = $1`, [beneficiaryId]);
+      if (!rows[0] || rows[0].agent_id !== req.user.id) {
+        return res.status(403).json({ error: 'يمكنك تقييم المستفيدين المسجلين عن طريقك فقط' });
+      }
+    }
 
     const evaluation = await service.createEvaluation({
       beneficiaryType,
@@ -95,6 +112,11 @@ const update = async (req, res, next) => {
     if (!Array.isArray(criteriaScores) || criteriaScores.length === 0) {
       return res.status(400).json({ error: 'يرجى إدخال درجات معايير التقييم' });
     }
+    const bad = criteriaScores.some((c) => {
+      const n = Number(c && c.score);
+      return !Number.isFinite(n) || n < 0 || n > 5;
+    });
+    if (bad) return res.status(400).json({ error: 'درجة كل معيار يجب أن تكون بين 0 و 5' });
 
     const evaluation = await service.updateEvaluation(id, {
       evaluationDate,

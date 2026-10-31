@@ -83,7 +83,7 @@ export default function GmDashboard() {
         ) : (
           <>
             <StatCard icon={<Users size={20}/>}         label="إجمالي الأيتام"      value={data?.total_orphans}        color="#1B5E8C" onClick={() => router.push('/orphans')} />
-            <StatCard icon={<CheckCircle size={20}/>}   label="تحت الكفالة"         value={data?.total_orphans != null ? (data.total_orphans - (pending.registrations || 0)) : '—'} color="#10b981" />
+            <StatCard icon={<CheckCircle size={20}/>}   label="تحت الكفالة"         value={data?.sponsored_orphans ?? '—'} color="#10b981" />
             <StatCard icon={<ClipboardList size={20}/>} label="تسجيلات معلّقة"      value={pending.registrations}       color="#f59e0b" onClick={() => router.push('/registrations')} />
             <StatCard icon={<BookOpen size={20}/>}      label="تقارير حفظ معلّقة"   value={pending.quran_reports}       color="#8b5cf6" />
             <StatCard icon={<Banknote size={20}/>}      label="صرف الشهر الحالي"    value={finance.total != null ? `${Number(finance.total).toLocaleString()} ر.ي` : '—'} color="#059669" />

@@ -15,6 +15,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_ENDPOINTS = {
   LOGIN:   `${BASE_URL}/sponsor/login`,
   ORPHANS: '/sponsor/orphans',
+  FAMILIES: '/sponsor/families',
   FEED:    '/ads/sponsor/feed',
   REPORTS: (id) => `/sponsor/reports/${id}`,
 };
@@ -270,6 +271,7 @@ function OrphanDetailModal({ orphanId, orphanName, token, onClose }) {
 // ── 3. Premium Dashboard View ─────────────────────────────────────────────────
 function DashboardView({ token, sponsor, onLogout }) {
   const [orphans,       setOrphans]       = useState([]);
+  const [families,      setFamilies]      = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [detailOrphan,  setDetailOrphan]  = useState(null);
@@ -280,16 +282,18 @@ function DashboardView({ token, sponsor, onLogout }) {
     Promise.all([
       portalApi.get(API_ENDPOINTS.ORPHANS, authHeaders),
       portalApi.get(API_ENDPOINTS.FEED, authHeaders).catch(() => ({ data: { ads: [] } })),
+      portalApi.get(API_ENDPOINTS.FAMILIES, authHeaders).catch(() => ({ data: { families: [] } })),
     ])
-      .then(([orphanRes, annRes]) => {
+      .then(([orphanRes, annRes, famRes]) => {
         setOrphans(orphanRes.data.orphans || []);
+        setFamilies(famRes.data.families || []);
         setAnnouncements((annRes.data.ads || []).map(mapAdToAnnouncement));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const totalMonthly = orphans.reduce((s, o) => s + Number(o.monthly_amount || 0), 0);
+  const totalMonthly = [...orphans, ...families].reduce((s, o) => s + Number(o.monthly_amount || 0), 0);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans" dir="rtl">
@@ -399,6 +403,26 @@ function DashboardView({ token, sponsor, onLogout }) {
           )}
         </section>
 
+        {families.length > 0 && (
+          <section>
+            <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+              <Users className="text-blue-600" size={22} /> الأسر المكفولة
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {families.map((f) => (
+                <div key={f.id} className="bg-white rounded-3xl p-6 border border-slate-200/60 shadow-sm">
+                  <h4 className="text-sm font-black text-slate-800 mb-1">{f.family_name}</h4>
+                  <p className="text-xs font-semibold text-slate-400 mb-4">{f.member_count} أفراد • {f.governorate_ar}</p>
+                  <div className="bg-slate-50 rounded-2xl p-4 text-center border border-slate-100">
+                    <span className="block text-xl font-black text-emerald-700">{Number(f.monthly_amount || 0).toLocaleString('ar-YE')}</span>
+                    <span className="text-[0.65rem] font-bold text-slate-500">ريال يمني / شهرياً</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Announcements */}
         {announcements.length > 0 && (
           <section>
@@ -442,14 +466,24 @@ export default function SponsorPortalPage() {
   const [accessToken, setAccessToken] = useState('');
   const [sponsor,     setSponsor]     = useState(null);
 
+  // Keep the session over a page reload (same tab only)
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem('ofsms_portal_session') || 'null');
+      if (saved?.accessToken && saved?.sponsor) { setAccessToken(saved.accessToken); setSponsor(saved.sponsor); }
+    } catch { /* ignore */ }
+  }, []);
+
   const handleLogin = (jwt, sponsorData) => {
     setAccessToken(jwt);
     setSponsor(sponsorData);
+    try { window.sessionStorage.setItem('ofsms_portal_session', JSON.stringify({ accessToken: jwt, sponsor: sponsorData })); } catch { /* ignore */ }
   };
 
   const handleLogout = () => {
     setAccessToken('');
     setSponsor(null);
+    try { window.sessionStorage.removeItem('ofsms_portal_session'); } catch { /* ignore */ }
   };
 
   if (!accessToken || !sponsor) {

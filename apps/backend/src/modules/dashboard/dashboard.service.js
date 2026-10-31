@@ -33,6 +33,7 @@ const getGmDashboard = async () => {
 
   return {
     total_orphans: parseInt(totals.total_orphans),
+    sponsored_orphans: parseInt(totals.sponsored_orphans),
     orphans_per_governorate: orphansPerGov.map(r => ({ ...r, count: parseInt(r.count) })),
     orphans_per_sponsor: orphansPerSponsor.map(r => ({ ...r, count: parseInt(r.count) })),
     latest_orphans: latestOrphans,

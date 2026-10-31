@@ -173,7 +173,7 @@ const formatDateInput = (dateStr) => {
 export default function EvaluationsPage() {
   const { user } = useAuthStore();
   const canEdit = ['gm', 'supervisor', 'agent'].includes(user?.role);
-  const canDelete = ['gm', 'supervisor'].includes(user?.role);
+  const canDelete = ['gm'].includes(user?.role);
 
   // Beneficiary filter & list state
   const [beneficiaryType, setBeneficiaryType] = useState('orphan'); // 'orphan' | 'family'
@@ -518,8 +518,8 @@ export default function EvaluationsPage() {
                   beneficiaries.map((b) => {
                     const isSelected = selectedBeneficiary?.id === b.id;
                     const code = b.type === 'family'
-                      ? `FAM-${String(b.id).padStart(6, '0')}`
-                      : `ORP-${String(b.id).padStart(6, '0')}`;
+                      ? `FAM-${String(b.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`
+                      : `ORP-${String(b.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`;
 
                     return (
                       <div
@@ -629,8 +629,8 @@ export default function EvaluationsPage() {
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span className="font-mono text-slate-600 font-semibold">
                           {selectedBeneficiary.type === 'family'
-                            ? `FAM-${String(selectedBeneficiary.id).padStart(6, '0')}`
-                            : `ORP-${String(selectedBeneficiary.id).padStart(6, '0')}`}
+                            ? `FAM-${String(selectedBeneficiary.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`
+                            : `ORP-${String(selectedBeneficiary.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`}
                         </span>
                         <span>•</span>
                         <span>{selectedBeneficiary.governorate_name || 'صنعاء'}</span>
@@ -650,7 +650,7 @@ export default function EvaluationsPage() {
                           <>
                             <span>•</span>
                             <span className="text-[#1B5E8C] font-semibold">
-                              الحالة: {selectedBeneficiary.status === 'sponsored' ? 'مكفول' : selectedBeneficiary.status}
+                              الحالة: {({ under_sponsorship: 'مكفول', sponsored: 'مكفول', under_marketing: 'تحت التسويق', under_review: 'قيد المراجعة', rejected: 'مرفوض', inactive: 'غير نشط' })[selectedBeneficiary.status] || selectedBeneficiary.status}
                             </span>
                           </>
                         )}

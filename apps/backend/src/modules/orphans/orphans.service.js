@@ -138,6 +138,7 @@ const updateOrphanStatus = async (id, status, notes, reviewerName = 'المشر�
   // fetch old value first
   const { rows: oldRows } = await query('SELECT status FROM orphans WHERE id = $1', [id]);
   const oldStatus = oldRows[0]?.status;
+  if (oldStatus) require('../../utils/statusTransitions').assertTransition(oldStatus, status);
 
   const { rows } = await query(
     `UPDATE orphans SET status = $1, notes = COALESCE($2, notes) WHERE id = $3 RETURNING *`,

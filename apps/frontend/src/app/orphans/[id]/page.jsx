@@ -280,7 +280,7 @@ export default function OrphanDetailPage() {
             )}
             {isGM && orphan?.status === 'under_marketing' && !orphan?.sponsor_name && (
               <button className="inline-flex items-center gap-1.5 p-[0.65rem_1.25rem] bg-[#0f766e] text-white border-none rounded-xl font-cairo text-sm font-extrabold cursor-pointer shadow-md shadow-teal-900/22 transition-all duration-150 hover:not-disabled:-translate-y-0.5 hover:not-disabled:shadow-lg hover:not-disabled:shadow-teal-900/32 disabled:opacity-65 disabled:cursor-not-allowed" onClick={() => setShareOpen(true)}>
-                <Share2 size={16} /> Share
+                <Share2 size={16} /> مشاركة للكفلاء
               </button>
             )}
 
