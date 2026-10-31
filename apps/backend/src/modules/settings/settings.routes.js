@@ -11,20 +11,20 @@ const controller = require('./settings.controller');
 const router = Router();
 
 // System Settings Key-Value (GM & Supervisor can view, GM can update)
-router.get('/', authenticate, authorize('gm', 'supervisor'), controller.getSettings);
-router.put('/', authenticate, authorize('gm', 'supervisor'), controller.updateSettings);
+router.get('/', authenticate, authorize('gm'), controller.getSettings);
+router.put('/', authenticate, authorize('gm'), controller.updateSettings);
 
 // Reference Lists CRUD
 router.get('/reference-lists', authenticate, authorize('gm', 'supervisor', 'agent', 'finance'), controller.getReferenceLists);
-router.post('/reference-lists', authenticate, authorize('gm', 'supervisor'), controller.addReferenceItem);
-router.put('/reference-lists/:id', authenticate, authorize('gm', 'supervisor'), controller.updateReferenceItem);
-router.delete('/reference-lists/:id', authenticate, authorize('gm', 'supervisor'), controller.deleteReferenceItem);
+router.post('/reference-lists', authenticate, authorize('gm'), controller.addReferenceItem);
+router.put('/reference-lists/:id', authenticate, authorize('gm'), controller.updateReferenceItem);
+router.delete('/reference-lists/:id', authenticate, authorize('gm'), controller.deleteReferenceItem);
 
 // Backups
-router.get('/backups', authenticate, authorize('gm', 'supervisor'), controller.getBackups);
+router.get('/backups', authenticate, authorize('gm'), controller.getBackups);
 router.post('/backups', authenticate, authorize('gm'), controller.createBackup);
 
 // Audit Logs
-router.get('/audit-logs', authenticate, authorize('gm', 'supervisor'), controller.getAuditLogs);
+router.get('/audit-logs', authenticate, authorize('gm'), controller.getAuditLogs);
 
 module.exports = router;

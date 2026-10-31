@@ -114,7 +114,6 @@ const NAV_ITEMS = {
     {
       group: 'الإدارة',
       items: [
-        { label: 'إعدادات النظام', href: '/settings',         icon: Settings },
         { label: 'تقييم الباحث الدوري', href: '/evaluations',   icon: ClipboardCheck },
         { label: 'طلبات التسجيل',      href: '/registrations', icon: ClipboardList },
         { label: 'برامج الدعم العيني', href: '/in-kind',       icon: Package },
@@ -234,7 +233,7 @@ const flatItems = (groups) => groups.flatMap((g) => g.items);
 const PUBLIC_PREFIXES = ['/login', '/sponsor/login', '/sponsor/portal', '/landing', '/install', '/how-to-use'];
 const ROLE_EXTRA_PATHS = {
   gm: ['/ads', '/receipts/supervisor', '/landing-settings', '/landing', '/in-kind', '/educational', '/evaluations', '/settings'],
-  supervisor: ['/receipts/supervisor', '/landing-settings', '/landing', '/in-kind', '/educational', '/evaluations', '/settings'],
+  supervisor: ['/receipts/supervisor', '/landing', '/in-kind', '/educational', '/evaluations'],
   agent: ['/receipts/batch', '/in-kind', '/educational', '/evaluations'],
   finance: ['/in-kind', '/educational', '/evaluations'],
 };
